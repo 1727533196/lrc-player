@@ -1,8 +1,8 @@
 import Player from './player/index.ts'
-import whistle from "../ttml/whistle.txt";
+import whistle from '../ttml/whistle.txt'
 
-const player = new Player('')
+const player = new Player(document.querySelector('#app'))
 
 fetch(whistle)
-    .then(response => response.text())
-    .then(data => player.updateLrc(data));
+  .then((response) => response.text())
+  .then((data) => player.updateLrc(data))
