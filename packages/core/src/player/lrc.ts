@@ -22,6 +22,9 @@ class Lrc {
   /* 更新歌词数据源，并且渲染 */
   _updateLrc(lrc: string) {
     this.lrcVal = parseYrc(lrc)
+    if(!this.lrcVal) {
+      return Logger.error('_updateLrc：歌词解析时为空：', this.lrcVal)
+    }
     this._renderLrc(this.lrcVal)
   }
   _renderLrc(lrc: LyricsLine[]) {
@@ -32,18 +35,23 @@ class Lrc {
 
     const playerContainer = document.createElement('div')
     playerContainer.className = 'y-player-container'
-    this.el.appendChild(playerContainer)
 
-    playerContainer.innerHTML = lrc
+    const playerScroll = document.createElement('div')
+    playerScroll.className = 'y-player-scroll'
+    playerContainer.appendChild(playerScroll)
+
+    playerScroll.innerHTML = lrc
       .map(
         (line) =>
           `<div class="y-player-item">${line.yrc
-            .map((segment) => {
+            .map((segment: LyricsLine) => {
               return `<span class="y-text">${segment.text}</span>`
             })
             .join(' ')}</div>`,
       )
       .join('\n')
+
+    this.el.appendChild(playerContainer)
   }
 }
 
