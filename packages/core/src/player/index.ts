@@ -1,21 +1,82 @@
 import Lrc from './lrc.ts'
+import Logger from "../logger";
+
+interface Core {
+  animationFrameId: number | null
+}
 
 class Player {
   audio: HTMLAudioElement
   lrc: Lrc
+  isPlaying: boolean = false
+  _core: Core = {
+    animationFrameId: null,
+  }
   constructor(el: HTMLElement) {
     this.lrc = new Lrc(el)
     this.audio = new Audio()
+    // 绑定事件处理方法到类的实例上
   }
-  play() {
-    this.audio.play()
+  async play() {
+    if(this.isPlaying) {
+      return
+    }
+    try {
+      await this.audio.play()
+      this.timeupdate()
+      this.isPlaying = true
+    } catch (e) {
+      Logger.error('调用play方法时抛出了异常：', e)
+      return e
+    }
   }
   pause() {
-    this.audio.pause()
+    if(!this.isPlaying) {
+      return
+    }
+    try {
+      this.audio.pause()
+      this.clearTimeupdate()
+      this.isPlaying = false
+    } catch (e) {
+      Logger.error('调用pause方法时抛出了异常：', e)
+    }
   }
-  /* 更新歌词，从而使其重新渲染 */
-  updateLrc(lrc: string) {
-    this.lrc._updateLrc(lrc)
+  /* 更新url, 更新歌词，从而使其重新渲染 */
+  updateAudioUrl(url: string, lrc: string) {
+    // 移除旧的事件监听器
+    this.audio.removeEventListener("canplaythrough", () => this.onCanPlayThroug(lrc));
+
+    this.audio.src = url
+    this.pause()
+
+    // 监听audio是否加载完毕
+    this.audio.addEventListener("canplaythrough", () => this.onCanPlayThroug(lrc));
+  }
+  clearTimeupdate() {
+    cancelAnimationFrame(this._core.animationFrameId!);
+  }
+  timeupdate() {
+    const updateTime = () => {
+      const currentTime = this.audio.currentTime;
+      console.log(currentTime);
+
+      this._core.animationFrameId = requestAnimationFrame(updateTime);
+    };
+
+    // 取消上一次请求
+    cancelAnimationFrame(this._core.animationFrameId!);
+
+    // 发起新的请求
+    this._core.animationFrameId = requestAnimationFrame(updateTime);
+  }
+  protected async onCanPlayThroug(lrc: string) {
+    try {
+      await this.play();
+      this.lrc._updateLrc(lrc)
+    } catch (error) {
+      Logger.error('更新歌词时播放失败：', error)
+    }
   }
 }
 

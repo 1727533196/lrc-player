@@ -1,6 +1,6 @@
 import { parseYrc } from '../utils'
 import Logger from '../logger'
-import { LyricsLine } from '../types/type.ts'
+import { LyricsLine } from '../types/type'
 
 class Lrc {
   lrcVal: LyricsLine[] | null = null
@@ -33,18 +33,24 @@ class Lrc {
     }
     console.log(lrc)
 
+    const lastPlayerContainer = this.el.querySelector('.y-player-container')
+    if(lastPlayerContainer) {
+      this.el.removeChild(lastPlayerContainer)
+    }
+
     const playerContainer = document.createElement('div')
     playerContainer.className = 'y-player-container'
 
     const playerScroll = document.createElement('div')
     playerScroll.className = 'y-player-scroll'
+
     playerContainer.appendChild(playerScroll)
 
     playerScroll.innerHTML = lrc
       .map(
         (line) =>
           `<div class="y-player-item">${line.yrc
-            .map((segment: LyricsLine) => {
+            .map((segment) => {
               return `<span class="y-text">${segment.text}</span>`
             })
             .join(' ')}</div>`,
