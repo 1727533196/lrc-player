@@ -1,5 +1,6 @@
-import Lrc from './lrc.ts'
+import Lrc from './lrc'
 import Logger from "../logger";
+import {LyricsLine} from "../types/type";
 
 interface Core {
   animationFrameId: number | null
@@ -13,7 +14,9 @@ class Player {
     animationFrameId: null,
   }
   constructor(el: HTMLElement) {
-    this.lrc = new Lrc(el)
+    this.lrc = new Lrc(el, {
+      getCurrentLrcLine: () => this.getCurrentLrcLine()
+    })
     this.audio = new Audio()
     // 绑定事件处理方法到类的实例上
   }
@@ -42,6 +45,9 @@ class Player {
       Logger.error('调用pause方法时抛出了异常：', e)
     }
   }
+  updateVolume(volume: number) {
+    this.audio.volume = volume
+  }
   /* 更新url, 更新歌词，从而使其重新渲染 */
   updateAudioUrl(url: string, lrc: string) {
     // 移除旧的事件监听器
@@ -69,6 +75,26 @@ class Player {
 
     // 发起新的请求
     this._core.animationFrameId = requestAnimationFrame(updateTime);
+  }
+  getCurrentLrcLine() {
+    console.log(this)
+    const lrc = this.lrc._getLrc()
+    const currentTime = +this.audio.currentTime.toFixed(2)
+
+    return lrc.find((item, index) => {
+      // 获取第一行
+      if(index === 0 && currentTime <= item.time) {
+        return item
+      }
+      const nextItem = lrc[index+1]
+      // 获取最后一行
+      if(!nextItem) {
+        return item
+      }
+      if(currentTime >= item.time && currentTime < nextItem.time) {
+        return item
+      }
+    }) as LyricsLine
   }
   protected async onCanPlayThroug(lrc: string) {
     try {

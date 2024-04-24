@@ -2,11 +2,18 @@ import { parseYrc } from '../utils'
 import Logger from '../logger'
 import { LyricsLine } from '../types/type'
 
+interface Utils {
+  getCurrentLrcLine: () => LyricsLine
+}
+
 class Lrc {
   lrcVal: LyricsLine[] | null = null
   el: HTMLElement | null = null
-  constructor(el: HTMLElement) {
+  utils: Utils
+  playerItem: NodeList
+  constructor(el: HTMLElement, utils: Utils) {
     this._initEl(el)
+    this.utils = utils
   }
 
   _initEl(el: HTMLElement) {
@@ -31,7 +38,6 @@ class Lrc {
     if (!this.el) {
       return Logger.error(`渲染歌词时检查到el为空：${this.el}`)
     }
-    console.log(lrc)
 
     const lastPlayerContainer = this.el.querySelector('.y-player-container')
     if(lastPlayerContainer) {
@@ -58,6 +64,15 @@ class Lrc {
       .join('\n')
 
     this.el.appendChild(playerContainer)
+
+    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item')
+  }
+  _getLrc(): LyricsLine[] {
+    return this.lrcVal || []
+  }
+  _transformLrc() {
+    const currentLrcLine = this.utils.getCurrentLrcLine()
+    return this.playerItem[currentLrcLine.index]
   }
 }
 

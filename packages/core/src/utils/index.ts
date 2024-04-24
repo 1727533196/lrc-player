@@ -13,7 +13,7 @@ export function parseYrc(yrc: string) {
   let startIndex = 0
   let endIndex = 0
   let present = '' // 当前扫描到的标识
-  let index = 1 // 每行歌词的index
+  let index = 0 // 每行歌词的index
   let startCount = 0 // 当前扫描到的{数量
   let endCount = 0 // 当前扫描到的}数量
   let isEnd = true
