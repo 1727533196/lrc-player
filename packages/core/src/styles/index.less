@@ -14,7 +14,7 @@
         border-radius: 10px;
       }
       .y-text {
-        background: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.3) 0%);
+        background-image: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.3) 0%);
         -webkit-background-clip: text;
         color: transparent;
         font-size: 23px;
@@ -29,9 +29,26 @@
         width: 15px;
         border-radius: 50%;
         background-color: rgba(255,255,255, 0.1);
+        //animation: breathing 3s cubic-bezier(0.32, 0.3, 0.3, 0.3) infinite; /* 应用动画 */
       }
       .y-wait + .y-wait {
         margin-left: 10px;
+      }
+    }
+    @keyframes breathing {
+      20%, 100% {
+        transform: scale(1);    /* 原始大小 */
+      }
+      40%, 45% {
+        transform: scale(1.3);  /* 放大到1.5倍，并在最大时保持 */
+      }
+    }
+    @keyframes Test {
+      0% {
+        background-image: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.3) 0%);
+      }
+      100% {
+        background-image: linear-gradient(to right, #fff 100%, rgba(255, 255, 255, 0.3) 0%);
       }
     }
   }

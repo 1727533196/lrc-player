@@ -10,7 +10,7 @@ class Lrc {
   lrcVal: LyricsLine[] | null = null
   el: HTMLElement | null = null
   utils: Utils
-  playerItem: NodeList
+  playerItem: NodeListOf<HTMLDivElement>
   constructor(el: HTMLElement, utils: Utils) {
     this._initEl(el)
     this.utils = utils
@@ -60,7 +60,7 @@ class Lrc {
       }
     }).join('\n')
 
-    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item')
+    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item') as NodeListOf<HTMLDivElement>
   }
   _generateWaitHtml() {
     const waitHtml = `

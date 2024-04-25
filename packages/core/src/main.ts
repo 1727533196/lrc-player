@@ -1,3 +1,5 @@
+import './player/index'
 import './style.css'
-import './demo.ts'
+import './demo'
 import './styles/index.less'
+

@@ -66,9 +66,20 @@ class Player {
   }
   timeupdate() {
     const updateTime = () => {
-      const currentTime = +this.audio.currentTime.toFixed(2);
+      const currentTime = +this.audio.currentTime.toFixed(2)
       const lrc = this.lrc._getLrc()
-      console.log(currentTime);
+      const curLrcLine = lrc[this.index]
+      const curLineEl = this.lrc.playerItem[this.index]
+
+      if(currentTime >= curLrcLine.time) {
+        curLineEl.classList.add('y-current-line')
+        const curLineAllTextEl = curLineEl.children as HTMLCollectionOf<HTMLDivElement>
+        for(let i = 0; i < curLineAllTextEl.length; i++) {
+          const textEl = curLineAllTextEl[i]
+          textEl.style.animation = `Test ${curLrcLine.yrc[i].transition}s linear`
+        }
+        this.index++
+      }
 
       this._core.animationFrameId = requestAnimationFrame(updateTime);
     };
