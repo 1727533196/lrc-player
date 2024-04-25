@@ -1,4 +1,4 @@
-import { parseYrc } from '../utils'
+import {html, parseYrc} from '../utils'
 import Logger from '../logger'
 import { LyricsLine } from '../types/type'
 
@@ -29,6 +29,7 @@ class Lrc {
   /* 更新歌词数据源，并且渲染 */
   _updateLrc(lrc: string) {
     this.lrcVal = parseYrc(lrc)
+    console.log('this.lrcVal', this.lrcVal)
     if(!this.lrcVal) {
       return Logger.error('_updateLrc：歌词解析时为空：', this.lrcVal)
     }
@@ -39,40 +40,56 @@ class Lrc {
       return Logger.error(`渲染歌词时检查到el为空：${this.el}`)
     }
 
-    const lastPlayerContainer = this.el.querySelector('.y-player-container')
-    if(lastPlayerContainer) {
-      this.el.removeChild(lastPlayerContainer)
+    let playerScroll = this.el.querySelector('.y-player-scroll')
+    if(!playerScroll) {
+      const playerContainer = document.createElement('div')
+      playerContainer.className = 'y-player-container'
+
+      playerScroll = document.createElement('div')
+      playerScroll.className = 'y-player-scroll'
+
+      playerContainer.appendChild(playerScroll)
+      this.el.appendChild(playerContainer)
     }
 
-    const playerContainer = document.createElement('div')
-    playerContainer.className = 'y-player-container'
-
-    const playerScroll = document.createElement('div')
-    playerScroll.className = 'y-player-scroll'
-
-    playerContainer.appendChild(playerScroll)
-
-    playerScroll.innerHTML = lrc
-      .map(
-        (line) =>
-          `<div class="y-player-item">${line.yrc
-            .map((segment) => {
-              return `<span class="y-text">${segment.text}</span>`
-            })
-            .join(' ')}</div>`,
-      )
-      .join('\n')
-
-    this.el.appendChild(playerContainer)
+    playerScroll!.innerHTML = lrc.map((line) => {
+      if(!line.wait) {
+        return this._generateLyricsLineHtml(line)
+      } else {
+        return this._generateWaitHtml()
+      }
+    }).join('\n')
 
     this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item')
+  }
+  _generateWaitHtml() {
+    const waitHtml = `
+      <div class="y-wait-item">
+        <div class="y-wait"></div>
+        <div class="y-wait"></div>
+        <div class="y-wait"></div>
+      </div>
+    `
+    return waitHtml
+  }
+  _generateLyricsLineHtml(line: LyricsLine) {
+    const lyricsLineHtml = `<div class="y-player-item">${
+        line.yrc.map((segment) => {
+          return `<span class="y-text">${segment.text}</span>`
+        }).join(' ')
+    }</div>`
+
+    return lyricsLineHtml
   }
   _getLrc(): LyricsLine[] {
     return this.lrcVal || []
   }
-  _transformLrc() {
+  _getTransformLrc() {
     const currentLrcLine = this.utils.getCurrentLrcLine()
     return this.playerItem[currentLrcLine.index]
+  }
+  _startAnimation() {
+
   }
 }
 

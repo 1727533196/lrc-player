@@ -13,6 +13,7 @@ class Player {
   _core: Core = {
     animationFrameId: null,
   }
+  index: number = 0 // 当前行
   constructor(el: HTMLElement) {
     this.lrc = new Lrc(el, {
       getCurrentLrcLine: () => this.getCurrentLrcLine()
@@ -20,7 +21,7 @@ class Player {
     this.audio = new Audio()
     // 绑定事件处理方法到类的实例上
   }
-  async play() {
+  play = async () => {
     if(this.isPlaying) {
       return
     }
@@ -33,7 +34,7 @@ class Player {
       return e
     }
   }
-  pause() {
+  pause = () => {
     if(!this.isPlaying) {
       return
     }
@@ -45,15 +46,16 @@ class Player {
       Logger.error('调用pause方法时抛出了异常：', e)
     }
   }
-  updateVolume(volume: number) {
+  updateVolume = (volume: number) => {
     this.audio.volume = volume
   }
   /* 更新url, 更新歌词，从而使其重新渲染 */
-  updateAudioUrl(url: string, lrc: string) {
+  updateAudioUrl = (url: string, lrc: string) => {
     // 移除旧的事件监听器
     this.audio.removeEventListener("canplaythrough", () => this.onCanPlayThroug(lrc));
 
     this.audio.src = url
+    this.index = 0
     this.pause()
 
     // 监听audio是否加载完毕
@@ -64,7 +66,8 @@ class Player {
   }
   timeupdate() {
     const updateTime = () => {
-      const currentTime = this.audio.currentTime;
+      const currentTime = +this.audio.currentTime.toFixed(2);
+      const lrc = this.lrc._getLrc()
       console.log(currentTime);
 
       this._core.animationFrameId = requestAnimationFrame(updateTime);
@@ -77,7 +80,6 @@ class Player {
     this._core.animationFrameId = requestAnimationFrame(updateTime);
   }
   getCurrentLrcLine() {
-    console.log(this)
     const lrc = this.lrc._getLrc()
     const currentTime = +this.audio.currentTime.toFixed(2)
 

@@ -1,10 +1,12 @@
+@player_padding: 10px 60px;
+
 .y-player-container {
   height: 80vh;
   overflow: auto;
   .y-player-scroll {
     .y-player-item {
       display: flex;
-      padding: 10px 60px;
+      padding: @player_padding;
       white-space: pre;
       flex-wrap: wrap;
       &:hover {
@@ -12,8 +14,24 @@
         border-radius: 10px;
       }
       .y-text {
+        background: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.3) 0%);
+        -webkit-background-clip: text;
+        color: transparent;
         font-size: 23px;
         font-weight: 600;
+      }
+    }
+    .y-wait-item {
+      display: flex;
+      padding: @player_padding;
+      .y-wait {
+        height: 15px;
+        width: 15px;
+        border-radius: 50%;
+        background-color: rgba(255,255,255, 0.1);
+      }
+      .y-wait + .y-wait {
+        margin-left: 10px;
       }
     }
   }

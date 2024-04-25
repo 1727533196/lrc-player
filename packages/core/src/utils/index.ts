@@ -1,5 +1,5 @@
 // 解析逐字歌词
-import { LyricsLine } from '../types/type.ts'
+import {LyricsFragment, LyricsLine} from '../types/type'
 
 export function parseYrc(yrc: string) {
   const result: LyricsLine[] = []
@@ -12,7 +12,6 @@ export function parseYrc(yrc: string) {
 
   let startIndex = 0
   let endIndex = 0
-  let present = '' // 当前扫描到的标识
   let index = 0 // 每行歌词的index
   let startCount = 0 // 当前扫描到的{数量
   let endCount = 0 // 当前扫描到的}数量
@@ -25,7 +24,6 @@ export function parseYrc(yrc: string) {
       }
       startCount++
       isEnd = false
-      present = '{'
     } else if (target === '}') {
       endCount++
       if (startCount === endCount) {
@@ -36,21 +34,36 @@ export function parseYrc(yrc: string) {
       }
     } else if (target === '[' && isEnd) {
       startIndex = i
-      present = '['
       obj = { time: 0, duration: 0, index: 0, yrc: [] }
       result.push(obj)
     } else if (target === ']' && isEnd) {
       endIndex = i
-      const timeArr = yrc.slice(startIndex + 1, endIndex).split(',')
-      obj.time = +timeArr[0] / 1000
-      obj.duration = +timeArr[1] / 1000
+      const [time, duration] = yrc.slice(startIndex + 1, endIndex).split(',').map(item => +item / 1000)
+      obj.time = time
+      obj.duration = duration
       obj.index = index++
+
+      // 如果当前和下一次的间隔时间超过10秒，则塞入一个空数据
+      if (i < yrc.length - 1) {
+        const nextStartIndex = yrc.indexOf('[', i + 1)
+        const nextEndIndex = yrc.indexOf(']', i + 1)
+        const [nextTime] = yrc.slice(nextStartIndex + 1, nextEndIndex).split(',').map(item => +item / 1000)
+
+        if ((nextTime - +(obj.time + duration).toFixed(2)) > 8) {
+          result.push({
+            time: 0,
+            duration: 0,
+            index: 0,
+            wait: true,
+          })
+        }
+      }
+
     } else if (target === '(' && isEnd) {
       startIndex = i
-      present = '('
     } else if (target === ')' && isEnd) {
       endIndex = i
-      const timeArr = yrc.slice(startIndex + 1, endIndex).split(',')
+      const [cursor, transition] = yrc.slice(startIndex + 1, endIndex).split(',').map(item => +item / 1000)
       let text: string = ''
 
       for (let o = i + 1; o < yrc.length; o++) {
@@ -59,12 +72,36 @@ export function parseYrc(yrc: string) {
         }
         text += yrc[o]
       }
+      let glowYrc: LyricsFragment[] | null = null
+      if(transition >= 1 && text.trim().length > 0) {
+
+        glowYrc = []
+        const len = text.length
+        const average = transition / len
+        for(let i = 0; i < len; i++) {
+          glowYrc.push({
+            text: text[i],
+            transition: average,
+            cursor: cursor + average * i,
+          })
+        }
+      }
+
       obj.yrc.push({
-        text: text,
-        transition: Number(timeArr[1]) / 1000,
-        cursor: Number(timeArr[0]) / 1000,
+        text,
+        transition,
+        cursor,
+        glowYrc,
       })
     }
   }
   return result
+}
+
+export function html(strings, ...values) {
+  let str = '';
+  strings.forEach((string, i) => {
+    str += string + (values[i] || '');
+  });
+  return str;
 }
