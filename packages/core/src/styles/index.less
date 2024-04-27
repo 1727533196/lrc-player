@@ -14,8 +14,10 @@
         border-radius: 10px;
       }
       .y-text {
-        background-image: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.3) 0%);
+        background: rgba(255,255,255,0.3) -webkit-linear-gradient(left, #fff, #fff) no-repeat 0 0;;
         -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 0% 100%;
         color: transparent;
         font-size: 23px;
         font-weight: 600;
@@ -45,10 +47,20 @@
     }
     @keyframes Test {
       0% {
-        background-image: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0.3) 0%);
+        background-size: 0 100%;
       }
+
       100% {
-        background-image: linear-gradient(to right, #fff 100%, rgba(255, 255, 255, 0.3) 0%);
+        background-size: 100% 100%;
+      }
+    }
+    @keyframes Test1 {
+      0% {
+        transform: translateY(0);
+      }
+
+      100% {
+        transform: translateY(-2px);
       }
     }
   }

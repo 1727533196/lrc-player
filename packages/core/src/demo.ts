@@ -1,5 +1,5 @@
 import Player from './player/index'
-import lrc from '../ttml/搁浅.txt'
+import lrc from '../ttml/golden hour.txt'
 
 const player = new Player(document.querySelector('#app') as HTMLElement)
 
@@ -7,17 +7,27 @@ const initEl = document.querySelector('.btn.init') as HTMLButtonElement
 const playEl = document.querySelector('.btn.play') as HTMLButtonElement
 const pauseEl = document.querySelector('.btn.pause') as HTMLButtonElement
 const currentEl = document.querySelector('.btn.current') as HTMLButtonElement
+const setTimeEl = document.querySelector('.btn.set-time') as HTMLButtonElement
+const timeInputEl = document.querySelector('.input-time') as HTMLInputElement
 
-if(currentEl) {
-  currentEl.onclick = () => {
-    console.log(player.getCurrentLrcLine());
-    console.log(player.lrc._getTransformLrc())
+if(setTimeEl && timeInputEl) {
+  setTimeEl.onclick = () => {
+    console.log('timeInputEl.value', timeInputEl.value)
+    player.updateTime(+timeInputEl.value)
   }
 }
 
-const url = 'https://ws6.stream.qqmusic.qq.com/C400001TM1cF044EAg.m4a?guid=4651014208&vkey=1AD3A38F2D1AB94732ACED665487836B5F8FD1D852710248365D2BFDF7A7766D749787334CF21F9DC5952F18B54462CA7D42F9B559F2CD4C&uin=&fromtag=120032&src=C400004NmDtD4RcwiJ.m4a'
+if(currentEl) {
+  currentEl.onclick = () => {
+    // console.log(player.getCurrentLrcLine());
+    console.log(player.curLrcLine?.index);
+    // console.log(player.lrc._getTransformLrc())
+  }
+}
 
-player.updateVolume(0.03)
+const url = 'http://m701.music.126.net/20240428000050/cd1fd2bb55460e18e3f13b3df842a297/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/15188765275/3a8b/fd07/b079/1bde5c89d7b5640f3869068772ba3eb0.flac'
+
+player.updateVolume(0.7)
 if(initEl) {
   initEl.addEventListener('click', async () => {
     const response = await fetch(lrc)

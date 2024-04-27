@@ -4,8 +4,10 @@ import { LyricsLine } from '../types/type'
 
 interface Utils {
   getCurrentLrcLine: () => LyricsLine
+  updateTime: (time: number, index?: number) => void
 }
 
+type Target = HTMLDivElement | HTMLSpanElement
 class Lrc {
   lrcVal: LyricsLine[] | null = null
   el: HTMLElement | null = null
@@ -50,6 +52,22 @@ class Lrc {
 
       playerContainer.appendChild(playerScroll)
       this.el.appendChild(playerContainer)
+
+      playerScroll.addEventListener('click', (event) => {
+        // 获取事件触发的目标元素
+        const targetElement = event.target as Target;
+        let el = targetElement
+        if (targetElement.classList.contains('y-text')) {
+          el = targetElement.parentElement as Target;
+        }
+        if(el.dataset.index) {
+          const index = +el.dataset!.index as number
+          this.utils.updateTime(this._getLrc()[index].time, index)
+        } else {
+          Logger.error('事件处理程序click：index为空', el.dataset.index)
+        }
+
+      })
     }
 
     playerScroll!.innerHTML = lrc.map((line) => {
@@ -73,7 +91,7 @@ class Lrc {
     return waitHtml
   }
   _generateLyricsLineHtml(line: LyricsLine) {
-    const lyricsLineHtml = `<div class="y-player-item">${
+    const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
         line.yrc.map((segment) => {
           return `<span class="y-text">${segment.text}</span>`
         }).join(' ')
@@ -84,12 +102,14 @@ class Lrc {
   _getLrc(): LyricsLine[] {
     return this.lrcVal || []
   }
+  // 重新获取当前进行时元素
   _getTransformLrc() {
     const currentLrcLine = this.utils.getCurrentLrcLine()
     return this.playerItem[currentLrcLine.index]
   }
-  _startAnimation() {
-
+  // 返回一个promise，过渡完成时resolve
+  _startAnimation(el: HTMLElement, keyframes: any, options: any) {
+    return el.animate(keyframes, options).finished
   }
 }
 
