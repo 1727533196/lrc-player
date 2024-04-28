@@ -17,6 +17,8 @@ if(setTimeEl && timeInputEl) {
   }
 }
 
+console.log('player', player)
+
 if(currentEl) {
   currentEl.onclick = () => {
     // console.log(player.getCurrentLrcLine());

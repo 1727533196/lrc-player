@@ -4,6 +4,12 @@ import { LyricsLine, Yrc } from '../types/type'
 
 interface Core {
   animationFrameId: number | null
+  curLrcLine: LyricsLine | null // 当前逐字歌词
+  lastAnimations: Array<Animation> // 上一行动画实例集合
+  curAnimations: Array<Animation> // 当前行动画实例集合
+  curLrcIndex: number // 当前行进行到的逐字歌词索引
+  animation: Animation | null
+  curLineAllTextEl: HTMLCollectionOf<HTMLDivElement> | null // 当前元素
 }
 
 class Player {
@@ -12,14 +18,15 @@ class Player {
   isPlaying: boolean = false
   _core: Core = {
     animationFrameId: null,
+    curLrcLine: null,
+    lastAnimations: [],
+    curAnimations: [],
+    curLrcIndex: 0,
+    animation: null,
+    curLineAllTextEl: null, // 当前元素
   }
   index: number = 0 // 当前行
-  protected curLineAllTextEl: HTMLCollectionOf<HTMLDivElement> | null = null // 当前元素
-  protected curLrcLine: LyricsLine | null = null // 当前逐字歌词
-  protected lastAnimations: Array<Animation> = [] // 上一行动画实例集合
-  protected curAnimations: Array<Animation> = [] // 当前行动画实例集合
-  protected curLrcIndex: number = 0 // 当前行进行到的逐字歌词索引
-  protected animation: Animation | null = null
+
   constructor(el: HTMLElement) {
     this.lrc = new Lrc(el, {
       getCurrentLrcLine: this.getCurrentLrcLine,
@@ -36,8 +43,8 @@ class Player {
       await this.audio.play()
       this.timeupdate()
       this.isPlaying = true
-      if(this.animation) {
-        this.animation.play()
+      if(this._core.animation) {
+        this._core.animation.play()
       }
     } catch (e) {
       Logger.error('调用play方法时抛出了异常：', e)
@@ -52,8 +59,8 @@ class Player {
       this.audio.pause()
       this.clearTimeupdate()
       this.isPlaying = false
-      if(this.animation) {
-        this.animation.pause()
+      if(this._core.animation) {
+        this._core.animation.pause()
       }
     } catch (e) {
       Logger.error('调用pause方法时抛出了异常：', e)
@@ -64,7 +71,7 @@ class Player {
   }
   updateIndex = (index: number) => {
     this.index = index
-    this.lastAnimations.forEach(animation => {
+    this._core.lastAnimations.forEach(animation => {
       animation.cancel()
     })
     this.lrc._moveScroll(index)
@@ -104,28 +111,28 @@ class Player {
       const lrc = this.lrc._getLrc()
 
       const index = this.getIndex()
-      this.curLrcLine = lrc[index] // 当前逐字歌词
+      this._core.curLrcLine = lrc[index] // 当前逐字歌词
       const curLineEl = this.lrc.playerItem[index] // 当前元素
 
       //0  5 >= 6  index = 0++ 在第一个检查完之后index就为1了，实际上应该等待过渡结束后
       //1  6 >= 7  index = 1++ 同理，实际上应该等待过渡结束后
       // 不++的话会导致一直进入这个判断。解决办法：
-      if (currentTime >= this.curLrcLine.time) {
+      if (currentTime >= this._core.curLrcLine.time) {
         curLineEl.classList.add('y-current-line')
-        this.curLineAllTextEl =
+        this._core.curLineAllTextEl =
           curLineEl.children as HTMLCollectionOf<HTMLDivElement>
 
         this.disposeAnimationProcess(
-          this.curLineAllTextEl,
-          this.curLrcLine.yrc,
+          this._core.curLineAllTextEl,
+          this._core.curLrcLine.yrc,
           0,
           (index, animate) => {
-            this.curLrcIndex = index
-            this.animation = animate
+            this._core.curLrcIndex = index
+            this._core.animation = animate
           },
         ).then((animations) => {
-          this.lastAnimations = animations as Array<Animation>
-          this.lastAnimations.forEach(animation => {
+          this._core.lastAnimations = animations as Array<Animation>
+          this._core.lastAnimations.forEach(animation => {
             animation.cancel()
           })
           curLineEl.classList.remove('y-current-line')
