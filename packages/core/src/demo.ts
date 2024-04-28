@@ -1,5 +1,5 @@
 import Player from './player/index'
-import lrc from '../ttml/golden hour.txt'
+import lrc from '../ttml/rap god.txt'
 
 const player = new Player(document.querySelector('#app') as HTMLElement)
 
@@ -25,9 +25,9 @@ if(currentEl) {
   }
 }
 
-const url = 'http://m701.music.126.net/20240428000050/cd1fd2bb55460e18e3f13b3df842a297/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/15188765275/3a8b/fd07/b079/1bde5c89d7b5640f3869068772ba3eb0.flac'
+const url = 'http://m7.music.126.net/20240428231337/29c62c16951328a7c2aad1cc0fe9c645/ymusic/5adc/296e/e69d/6f969adc6e235e640b64f9d31fa9225d.flac'
 
-player.updateVolume(0.7)
+player.updateVolume(0.5)
 if(initEl) {
   initEl.addEventListener('click', async () => {
     const response = await fetch(lrc)
