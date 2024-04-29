@@ -1,5 +1,6 @@
 import Player from './player/index'
-import lrc from '../ttml/rap god.txt'
+import lrc from '../ttml/golden hour.txt'
+import audioUrl from '../ttml/golden hour.m4a'
 
 const player = new Player(document.querySelector('#app') as HTMLElement)
 
@@ -13,7 +14,7 @@ const timeInputEl = document.querySelector('.input-time') as HTMLInputElement
 if(setTimeEl && timeInputEl) {
   setTimeEl.onclick = () => {
     console.log('timeInputEl.value', timeInputEl.value)
-    player.updateTime(+timeInputEl.value)
+    player.setTime(+timeInputEl.value)
   }
 }
 
@@ -21,13 +22,12 @@ console.log('player', player)
 
 if(currentEl) {
   currentEl.onclick = () => {
-    // console.log(player.getCurrentLrcLine());
-    console.log(player.curLrcLine?.index);
+    console.log(player.getCurrentLrcLine());
     // console.log(player.lrc._getTransformLrc())
   }
 }
 
-const url = 'http://m7.music.126.net/20240428231337/29c62c16951328a7c2aad1cc0fe9c645/ymusic/5adc/296e/e69d/6f969adc6e235e640b64f9d31fa9225d.flac'
+const url = audioUrl
 
 player.updateVolume(0.5)
 if(initEl) {

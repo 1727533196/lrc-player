@@ -4,7 +4,7 @@ import { LyricsLine } from '../types/type'
 
 interface Utils {
   getCurrentLrcLine: () => LyricsLine
-  updateTime: (time: number, index?: number) => void
+  setTime: (time: number, index?: number) => void
 }
 
 type Target = HTMLDivElement | HTMLSpanElement
@@ -62,7 +62,7 @@ class Lrc {
         }
         if(el.dataset.index) {
           const index = +el.dataset!.index as number
-          this.utils.updateTime(this._getLrc()[index].time, index)
+          this.utils.setTime(this._getLrc()[index].time, index)
         } else {
           Logger.error('事件处理程序click：index为空', el.dataset.index)
         }
@@ -91,7 +91,7 @@ class Lrc {
     return waitHtml
   }
   _moveScroll(index: number) {
-    console.log('index', index)
+    // console.log('index', index)
   }
   _generateLyricsLineHtml(line: LyricsLine) {
     const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
@@ -104,6 +104,17 @@ class Lrc {
   }
   _getLrc(): LyricsLine[] {
     return this.lrcVal || []
+  }
+  _rednerErrorLrc(err: string) {
+    if(!this.el) {
+      return
+    }
+    let playerScroll = this.el.querySelector('.y-player-scroll')
+    if(playerScroll) {
+      playerScroll.innerHTML = html`<div>
+        <h2 style="color: darkred">${err}</h2>
+      </div>`
+    }
   }
   // 重新获取当前进行时元素
   _getTransformLrc() {
