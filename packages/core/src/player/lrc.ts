@@ -91,7 +91,7 @@ class Lrc {
     return waitHtml
   }
   _moveScroll(index: number) {
-    // console.log('index', index)
+    console.log('index', index)
   }
   _generateLyricsLineHtml(line: LyricsLine) {
     const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${

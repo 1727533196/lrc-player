@@ -81,13 +81,14 @@ class Player {
     this._core.animation = null
     this.audio.currentTime = time
     const lrc = this.lrc._getLrc()
-    this.canceledLastAnimation(lrc[this.lastIndex].yrc)
     // 两种情况，附带index的通常是点击歌词，没有的一般是快进
     if (index) {
       this.updateIndex(index)
     } else {
       this.updateIndex(this.getCurrentLrcLine().index)
     }
+    this.canceledLastAnimation(lrc[this.lastIndex].yrc)
+    this.timeupdate()
   }
   handleAudioError = () => {
     const error = this.audio.error;
@@ -135,6 +136,7 @@ class Player {
     this.audio.addEventListener('canplaythrough', () => this.onCanPlayThroug())
   }
   timeupdate() {
+    let someCondition = true
     const updateTime = () => {
       const currentTime = +this.audio.currentTime.toFixed(2)
       const lrc = this.lrc._getLrc()
@@ -172,14 +174,21 @@ class Player {
           this.canceledLastAnimation(yrc)
           this._core.curAnimations.delete(yrc)
           curLineEl.classList.remove('y-current-line')
-        }).catch(() => {
+          this.updateIndex(this.getIndex() + 1)
 
+          this.timeupdate()
+        }).catch(() => {
+          curLineEl.classList.remove('y-current-line')
         })
 
-        this.updateIndex(this.getIndex() + 1)
+        someCondition = false
       }
 
-      this._core.animationFrameId = requestAnimationFrame(updateTime)
+      this._core.animationFrameId = requestAnimationFrame(() => {
+        if(someCondition) {
+          updateTime()
+        }
+      })
     }
 
     // 取消上一次请求
@@ -195,19 +204,7 @@ class Player {
         animation.cancel()
       })
     }
-    const lastEls = this.lrc.playerItem[this.lastIndex].children as HTMLCollectionOf<HTMLSpanElement>
-    if(lastEls.length) {
-      for(let i = 0; i < lastEls.length; i++) {
-        const el = lastEls[i]
-        el.animate([
-          {transform: 'transformY(-2px)'},
-          {transform: 'transformY(0px)'},
-        ], {
-          duration: 700,
-          fill: "forwards"
-        })
-      }
-    }
+
 
   }
   protected disposeAnimationProcess(
@@ -217,6 +214,14 @@ class Player {
     onChange?: (index: number, animate: Animation) => void,
   ): Promise<Array<Animation | string>> {
     const curContextAnimations: Array<Animation> = []
+
+    // 取消正在进行的相同动画
+    const animations = this._core.curAnimations.get(yrcRule);
+    if (animations) {
+      animations.forEach(animation => {
+        animation.cancel();
+      });
+    }
     return new Promise((resolve, reject) => {
       const process = (index: number) => {
         if (!els) {
