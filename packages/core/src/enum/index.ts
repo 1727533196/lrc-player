@@ -1,0 +1,3 @@
+export const FLOAT_START_DURATION = 700
+
+export const FLOAT_END_DURATION = 500

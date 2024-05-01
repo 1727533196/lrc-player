@@ -12,7 +12,8 @@ class Lrc {
   lrcVal: LyricsLine[] | null = null
   el: HTMLElement | null = null
   utils: Utils
-  playerItem: NodeListOf<HTMLDivElement>
+  playerItem: NodeListOf<HTMLDivElement & {children: HTMLCollectionOf<HTMLSpanElement>}>
+  playerContainer: HTMLDivElement
   constructor(el: HTMLElement, utils: Utils) {
     this._initEl(el)
     this.utils = utils
@@ -42,16 +43,16 @@ class Lrc {
       return Logger.error(`渲染歌词时检查到el为空：${this.el}`)
     }
 
-    let playerScroll = this.el.querySelector('.y-player-scroll')
+    let playerScroll = this.el.querySelector('.y-player-scroll') as HTMLDivElement
     if(!playerScroll) {
-      const playerContainer = document.createElement('div')
-      playerContainer.className = 'y-player-container'
+      this.playerContainer = document.createElement('div')
+      this.playerContainer.className = 'y-player-container'
 
       playerScroll = document.createElement('div')
       playerScroll.className = 'y-player-scroll'
 
-      playerContainer.appendChild(playerScroll)
-      this.el.appendChild(playerContainer)
+      this.playerContainer.appendChild(playerScroll)
+      this.el.appendChild(this.playerContainer)
 
       playerScroll.addEventListener('click', (event) => {
         // 获取事件触发的目标元素
@@ -78,7 +79,7 @@ class Lrc {
       }
     }).join('\n')
 
-    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item') as NodeListOf<HTMLDivElement>
+    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item')
   }
   _generateWaitHtml() {
     const waitHtml = `
@@ -91,7 +92,25 @@ class Lrc {
     return waitHtml
   }
   _moveScroll(index: number) {
-    console.log('index', index)
+    const curLine = this._getCurLine(index)
+
+    if(this.playerContainer) {
+      const scrollHalfHeight = this.playerContainer.clientHeight / 2
+      const lineHalfHeight = curLine.clientHeight / 2
+      const lineTop = curLine.offsetTop
+
+      this.playerContainer.scrollTo({
+        behavior: 'smooth',
+        top: (lineTop - (scrollHalfHeight - lineHalfHeight) + 100),
+      });
+    }
+
+  }
+  _getCurLine(index: number) {
+    return this.playerItem[index]
+  }
+  _getCurTextEls(index: number) {
+    return this.playerItem[index].children
   }
   _generateLyricsLineHtml(line: LyricsLine) {
     const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
