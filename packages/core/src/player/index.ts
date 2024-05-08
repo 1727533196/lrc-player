@@ -36,7 +36,11 @@ class Player {
       getCurrentLrcLine: this.getCurrentLrcLine,
       setTime: this.setTime,
     })
-    const eventHandler = new EventHandler()
+    const eventHandler = new EventHandler({
+      setTime: this.setTime,
+      clearTimeupdate: this.clearTimeupdate,
+      isPlaying: this.isPlaying,
+    })
     console.log('eventHandler', eventHandler)
     this.audio = new Audio()
     // 绑定事件处理方法到类的实例上
@@ -83,16 +87,21 @@ class Player {
   getIndex = () => {
     return this.index
   }
-  setTime = async (time: number, index?: number) => {
+  setTime = async (options: {
+    time?: number
+    index?: number
+  }) => {
     if (!this.audio.src) {
       return
     }
     let sequence = 0
     // 跳转时间时记得把animation清空掉，以防止play时调用
-    this.audio.currentTime = time
+    if(options.time) {
+      this.audio.currentTime = options.time
+    }
     // 两种情况，附带index的通常是点击歌词，没有的一般是快进
-    if (index) {
-      this.updateIndex(index)
+    if (options.index) {
+      this.updateIndex(options.index)
     } else {
       // 当没有明确的index指引时，这个时候我们要找到index，并且定位到逐字
       const targetIndex = this.getCurrentLrcLine().index
@@ -185,7 +194,7 @@ class Player {
     }
 
     // 取消上一次请求
-    cancelAnimationFrame(this._core.animationFrameId!)
+    this.clearTimeupdate()
 
     // 发起新的请求
     this._core.animationFrameId = requestAnimationFrame(updateTime)
@@ -269,7 +278,10 @@ class Player {
           })
         }
 
-        const scheduleAnimate = textEl.animate(...getLrcAnimationRule(curYrcRule.transition * 1000, 'lrc',))
+        const delayTime = +(+this.audio.currentTime.toFixed(2) - curYrcRule.cursor).toFixed(2)
+        const transition = delayTime > 0 ? (curYrcRule.transition - delayTime) * 1000 : curYrcRule.transition * 1000
+
+        const scheduleAnimate = textEl.animate(...getLrcAnimationRule(transition, 'lrc',))
         const floatAnimate = textEl.animate(...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'))
         textEl.setAttribute('data-is-transition', 'true')
 
@@ -306,7 +318,7 @@ class Player {
       })
     }
   }
-  protected clearTimeupdate() {
+  protected clearTimeupdate = () => {
     cancelAnimationFrame(this._core.animationFrameId!)
   }
   // 获取当前正在进行的逐字索引

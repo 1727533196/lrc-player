@@ -1,16 +1,27 @@
-
+interface Utils {
+  setTime: (options: {
+    time?: number
+    index?: number
+  }) => void
+  clearTimeupdate: () => void
+  isPlaying: boolean
+}
 
 class EventHandler {
-  constructor() {
+  utils: Utils
+  constructor(utils: Utils) {
+    this.utils = utils
     this.disposeVisibility()
   }
   disposeVisibility() {
     document.addEventListener('visibilitychange', () => {
       const state = document.visibilityState
       if(state === 'hidden') {
-        // console.log('隐藏')
+        this.utils.clearTimeupdate()
       } else {
-        // console.log('显示')
+        if(this.utils.isPlaying) {
+          this.utils.setTime({})
+        }
       }
     })
   }

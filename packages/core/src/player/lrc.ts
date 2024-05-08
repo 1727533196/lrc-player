@@ -4,7 +4,10 @@ import { LyricsLine } from '../types/type'
 
 interface Utils {
   getCurrentLrcLine: () => LyricsLine
-  setTime: (time: number, index?: number) => void
+  setTime: (options: {
+    time?: number
+    index?: number
+  }) => void
 }
 
 type Target = HTMLDivElement | HTMLSpanElement
@@ -143,7 +146,10 @@ class Lrc {
       }
       if(el.dataset.index) {
         const index = +el.dataset!.index as number
-        this.utils.setTime(this._getLrc()[index].time, index)
+        this.utils.setTime({
+          time: this._getLrc()[index].time,
+          index,
+        })
       } else {
         Logger.error('事件处理程序click：index为空', el.dataset.index)
       }
