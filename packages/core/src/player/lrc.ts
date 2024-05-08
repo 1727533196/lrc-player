@@ -1,4 +1,4 @@
-import {html, parseYrc} from '../utils'
+import {parseYrc} from '../utils'
 import Logger from '../logger'
 import { LyricsLine } from '../types/type'
 
@@ -54,21 +54,7 @@ class Lrc {
       this.playerContainer.appendChild(playerScroll)
       this.el.appendChild(this.playerContainer)
 
-      playerScroll.addEventListener('click', (event) => {
-        // 获取事件触发的目标元素
-        const targetElement = event.target as Target;
-        let el = targetElement
-        if (targetElement.classList.contains('y-text')) {
-          el = targetElement.parentElement as Target;
-        }
-        if(el.dataset.index) {
-          const index = +el.dataset!.index as number
-          this.utils.setTime(this._getLrc()[index].time, index)
-        } else {
-          Logger.error('事件处理程序click：index为空', el.dataset.index)
-        }
-
-      })
+      this._click(playerScroll)
     }
 
     playerScroll!.innerHTML = lrc.map((line) => {
@@ -115,6 +101,12 @@ class Lrc {
   _generateLyricsLineHtml(line: LyricsLine) {
     const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
         line.yrc.map((segment) => {
+          const glowYrc = segment.glowYrc
+          if(glowYrc) {
+            return `<div class="y-glow-yrc">${glowYrc.map((glow) => {
+              return `<span class="y-text">${glow.text}</span>`
+            }).join('')}</div>`
+          }
           return `<span class="y-text">${segment.text}</span>`
         }).join(' ')
     }</div>`
@@ -130,19 +122,33 @@ class Lrc {
     }
     let playerScroll = this.el.querySelector('.y-player-scroll')
     if(playerScroll) {
-      playerScroll.innerHTML = html`<div>
+      playerScroll.innerHTML = `<div>
         <h2 style="color: darkred">${err}</h2>
       </div>`
     }
   }
-  // 重新获取当前进行时元素
-  _getTransformLrc() {
-    const currentLrcLine = this.utils.getCurrentLrcLine()
-    return this.playerItem[currentLrcLine.index]
-  }
-  // 返回一个promise，过渡完成时resolve
-  _startAnimation(el: HTMLElement, keyframes: any, options: any) {
-    return el.animate(keyframes, options).finished
+  _click(playerScroll: HTMLDivElement) {
+    playerScroll.addEventListener('click', (event) => {
+      // 获取事件触发的目标元素
+      let targetElement = event.target as Target;
+      let el = targetElement
+      if (!targetElement.classList.contains('y-player-item')) {
+        for(let i = 0; i < 5; i++) {
+          targetElement = targetElement.parentElement as Target
+          if(targetElement && targetElement.classList.contains('y-player-item')) {
+            el = targetElement
+            break
+          }
+        }
+      }
+      if(el.dataset.index) {
+        const index = +el.dataset!.index as number
+        this.utils.setTime(this._getLrc()[index].time, index)
+      } else {
+        Logger.error('事件处理程序click：index为空', el.dataset.index)
+      }
+
+    })
   }
 }
 

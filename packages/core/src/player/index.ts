@@ -1,14 +1,21 @@
 import Lrc from './lrc'
 import Logger from '../logger'
-import { LyricsLine, Yrc } from '../types/type'
+import {LyricsFragment, LyricsLine, Yrc} from '../types/type'
 import EventHandler from "./eventHandler";
 import {FLOAT_END_DURATION, FLOAT_START_DURATION} from "../enum";
+import {getLrcAnimationRule, isString} from "../utils";
+import '../styles/index.less'
 
 interface Core {
   animationFrameId: number | null
-  curAnimations: WeakMap<object, Animation[]> // 动画实例集合
+  curAnimations: WeakMap<object, CurContextAnimations> // 动画实例集合
   curLrcIndex: number // 当前行进行到的逐字歌词索引
   animation: Animation | null
+}
+
+type CurContextAnimations = {
+  float: Array<Animation>
+  schedule: Array<Animation>
 }
 
 class Player {
@@ -76,15 +83,13 @@ class Player {
   getIndex = () => {
     return this.index
   }
-  setTime = (time: number, index?: number) => {
+  setTime = async (time: number, index?: number) => {
     if (!this.audio.src) {
       return
     }
     let sequence = 0
     // 跳转时间时记得把animation清空掉，以防止play时调用
-    // this._core.animation = null
     this.audio.currentTime = time
-    // const lrc = this.lrc._getLrc()
     // 两种情况，附带index的通常是点击歌词，没有的一般是快进
     if (index) {
       this.updateIndex(index)
@@ -95,15 +100,14 @@ class Player {
       sequence = this.getLyricsIndexByCharacter(targetIndex);
     }
     this._core.animation?.cancel()
-    // this.canceledLastAnimation(lrc[this.lastIndex].yrc)
+    this._core.animation = null
+    await this.play()
     this.timeupdate(sequence)
   }
   /* 更新url, 更新歌词，从而使其重新渲染 */
   updateAudioUrl = (url: string, lrc: string) => {
     // 移除旧的事件监听器
-    this.audio.removeEventListener('canplaythrough', () =>
-      this.onCanPlayThroug(),
-    )
+    this.audio.removeEventListener('loadedmetadata', this.onCanPlayThroug)
 
     this.audio.src = url
     this.pause()
@@ -118,7 +122,7 @@ class Player {
     }
 
     // 监听audio是否加载完毕
-    this.audio.addEventListener('canplaythrough', () => this.onCanPlayThroug())
+    this.audio.addEventListener('loadedmetadata', this.onCanPlayThroug)
   }
   timeupdate(sequence: number = 0) {
     let someCondition = true
@@ -145,14 +149,25 @@ class Player {
             this._core.animation = animate
           },
         ).then((animations) => {
-          this._core.curAnimations.set(yrc, animations as Animation[]);
+          this._core.curAnimations.set(yrc, {
+            float: animations.float,
+            schedule: animations.schedule,
+          });
+
           this.updateIndex(this.getIndex() + 1)
           this.timeupdate()
         }).catch((animations) => {
-          // 获取当前的 yrc 对应的数组
-          this._core.curAnimations.set(yrc, animations);
-        }).finally(() => {
 
+          if(isString(animations)) {
+            console.error(animations)
+          } else {
+            // 获取当前的 yrc 对应的数组
+            this._core.curAnimations.set(yrc, {
+              float: animations.float,
+              schedule: animations.schedule,
+            });
+          }
+        }).finally(() => {
           curLineEl.classList.remove('y-current-line')
           sequence = 0
           this.canceledLastAnimation(yrc)
@@ -175,33 +190,12 @@ class Player {
     // 发起新的请求
     this._core.animationFrameId = requestAnimationFrame(updateTime)
   }
-  protected canceledLastAnimation(key: object) {
-    const animations = this._core.curAnimations.get(key)
-    if(animations?.length) {
-      animations.forEach(animation => {
-        animation.cancel()
-      })
-    }
-
-    const lastTextEls = this.lrc.playerItem[this.lastIndex].children
-    if(lastTextEls) {
-      const [floatKeyFrames, floatOptions] = this.getLrcAnimationRule(FLOAT_END_DURATION, 'floatStart')
-      for(let i = 0; i < lastTextEls.length; i++) {
-        const el = lastTextEls[i]
-        if(el.getAttribute('data-is-transition') === 'true') {
-          el.animate(floatKeyFrames, floatOptions)
-          el.removeAttribute('data-is-transition')
-        }
-
-      }
-    }
-  }
   protected disposeAnimationProcess(
     els: HTMLCollectionOf<HTMLSpanElement>,
-    yrcRule: Yrc[],
+    yrcRule: Yrc[] | LyricsFragment[],
     index: number,
     onChange?: (index: number, animate: Animation) => void,
-  ): Promise<Array<Animation | string>> {
+  ): Promise<CurContextAnimations> {
     if (!els) {
       return Promise.reject(`disposeAnimationProcess：els元素为空, value: ${els}`)
     }
@@ -211,54 +205,80 @@ class Player {
       )
     }
 
-    const curContextAnimations: Array<Animation> = []
+    const curContextAnimations: CurContextAnimations = {
+      float: [],
+      schedule: [],
+    }
     // 取消正在进行的相同动画
     const animations = this._core.curAnimations.get(yrcRule);
     if (animations) {
-      animations.forEach(animation => {
+      animations.schedule.forEach(animation => {
+        animation.cancel();
+      });
+      animations.float.forEach(animation => {
         animation.cancel();
       });
     }
 
     // 如果序列不是从0开始，则表示此次是快进操作，需要将序列前置添加上完成样式
     if(index !== 0) {
-      const [keyframes, options] = this.getLrcAnimationRule(0, 'lrc',)
-      const [floatKeyFrames, floatOptions] = this.getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart')
+      const [keyframes, options] = getLrcAnimationRule(0, 'lrc',)
+      const [floatKeyFrames, floatOptions] = getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart')
 
       for(let i = 0; i < index; i++) {
-        const animate = els[i].animate(keyframes, options)
-        els[i].animate(floatKeyFrames, floatOptions)
-        curContextAnimations.push(animate)
+        const scheduleAnimate = els[i].animate(keyframes, options)
+        const floatAnimate = els[i].animate(floatKeyFrames, floatOptions)
+        curContextAnimations.schedule.push(scheduleAnimate)
+        curContextAnimations.float.push(floatAnimate)
 
-        onChange?.(index, animate)
+        onChange?.(index, scheduleAnimate)
       }
     }
     return new Promise((resolve, reject) => {
-      const process = (index: number) => {
+      const process = async (index: number) => {
         if (index >= yrcRule.length) {
           return resolve(curContextAnimations)
         }
         // 当前逐字元素
         const textEl = els[index]
         const curYrcRule = yrcRule[index]
-        const glowYrc = curYrcRule.glowYrc
+
         // 处理辉光歌词
-        if (glowYrc) {
-          for (let o = 0; o < glowYrc.length; o++) {}
+        if('glowYrc' in curYrcRule && curYrcRule.glowYrc) {
+          const glowYrc = curYrcRule.glowYrc
+
+          return this.disposeAnimationProcess(
+            textEl.children as HTMLCollectionOf<HTMLSpanElement>,
+            glowYrc,
+            0,
+            onChange,
+          ).then((animations) => {
+            curContextAnimations.float.push(...animations.float)
+            curContextAnimations.schedule.push(...animations.schedule)
+            process(++index)
+          }).catch((animations) => {
+            if(isString(animations)) {
+              console.error(animations)
+            } else {
+              // 获取当前的 yrc 对应的数组
+              curContextAnimations.float.push(...animations.float)
+              curContextAnimations.schedule.push(...animations.schedule)
+
+              reject(curContextAnimations)
+            }
+          })
         }
 
-        const [keyframes, options] = this.getLrcAnimationRule(
-          curYrcRule.transition * 1000,
-          'lrc',
-        )
-        const animate = textEl.animate(keyframes, options)
-        textEl.animate(...this.getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'))
+        const scheduleAnimate = textEl.animate(...getLrcAnimationRule(curYrcRule.transition * 1000, 'lrc',))
+        const floatAnimate = textEl.animate(...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'))
         textEl.setAttribute('data-is-transition', 'true')
-        curContextAnimations.push(animate)
-        onChange?.(index, animate)
+
+        curContextAnimations.schedule.push(scheduleAnimate)
+        curContextAnimations.float.push(floatAnimate)
+        onChange?.(index, scheduleAnimate)
 
         // 在动画完成后执行处理
-        animate.finished.then(() => {
+        scheduleAnimate.finished.then(() => {
           process(++index)
         }).catch(() => {
           return reject(curContextAnimations)
@@ -267,35 +287,24 @@ class Player {
       process(index)
     })
   }
-  protected getLrcAnimationRule(
-    duration: number,
-    key: 'lrc' | 'floatStart' | 'floatEnd',
-  ): [Keyframe[], KeyframeAnimationOptions] {
-    const rule = {
-      lrc: [
-        [{ backgroundSize: '0% 100%' }, { backgroundSize: '100% 100%' }],
-        {
-          duration,
-          fill: 'forwards',
-        },
-      ],
-      floatStart: [
-        [{ transform: 'translateY(0px)' }, { transform: 'translateY(-2px)' }],
-        {
-          duration: duration,
-          fill: 'forwards',
-        },
-      ],
-      floatEnd: [
-        [{ transform: 'translateY(-2px)' }, { transform: 'translateY(0px)' }],
-        {
-          duration: duration,
-          fill: 'forwards',
-        },
-      ],
-    }
+  protected canceledLastAnimation(key: object) {
+    const animations = this._core.curAnimations.get(key)
+    if(animations) {
+      animations.schedule.forEach(animation => {
+        animation.cancel()
+      })
 
-    return rule[key] as [Keyframe[], KeyframeAnimationOptions];
+      const [floatKeyFrames, floatOptions] = getLrcAnimationRule(FLOAT_END_DURATION, 'floatEnd')
+      animations.float.forEach(animation => {
+        if(animation.effect) {
+          // @ts-ignore
+          const targetElement = animation.effect.target as HTMLSpanElement
+          targetElement.animate(floatKeyFrames, floatOptions).finished.then(() => {
+            animation.cancel()
+          })
+        }
+      })
+    }
   }
   protected clearTimeupdate() {
     cancelAnimationFrame(this._core.animationFrameId!)
@@ -343,7 +352,7 @@ class Player {
       }
     }) as LyricsLine
   }
-  protected async onCanPlayThroug() {
+  protected onCanPlayThroug = async () => {
     try {
       await this.play()
       this.timeupdate()

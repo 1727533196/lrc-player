@@ -55,6 +55,7 @@ export function parseYrc(yrc: string) {
             duration: 0,
             index: 0,
             wait: true,
+            yrc: []
           })
         }
       }
@@ -98,10 +99,54 @@ export function parseYrc(yrc: string) {
   return result
 }
 
-export function html(strings, ...values) {
-  let str = '';
-  strings.forEach((string, i) => {
-    str += string + (values[i] || '');
-  });
-  return str;
+export function getLrcAnimationRule(
+  duration: number,
+  key: 'lrc' | 'floatStart' | 'floatEnd' | 'glow',
+): [Keyframe[], KeyframeAnimationOptions] {
+  const rule = {
+    lrc: [
+      [{ backgroundSize: '0% 100%' }, { backgroundSize: '100% 100%' }],
+      {
+        duration,
+        fill: 'forwards',
+      },
+    ],
+    floatStart: [
+      [{ transform: 'translateY(0px)' }, { transform: 'translateY(-2px)' }],
+      {
+        duration: duration,
+        fill: 'forwards',
+      },
+    ],
+    floatEnd: [
+      [{ transform: 'translateY(-2px)' }, { transform: 'translateY(0px)' }],
+      {
+        duration: duration,
+        fill: 'forwards',
+      },
+    ],
+    glow: [
+      [{ textShadow: '0 0 10px rgba(255, 255, 255, 0)' }, { textShadow: '0 0 10px rgba(255, 255, 255, 0.7)' }],
+      {
+        duration: duration,
+        fill: 'forwards',
+      },
+    ]
+  }
+
+  return rule[key] as [Keyframe[], KeyframeAnimationOptions];
+}
+
+export function animate(el: HTMLElement, keyframes: Keyframe[], options?: KeyframeAnimationOptions | number) {
+  const style = getComputedStyle(el)
+
+  el.animate(keyframes, options)
+}
+
+export function isString(value: unknown) {
+  return typeof value === 'string'
+}
+
+export function isObject(value: unknown) {
+  return value && typeof value === 'object'
 }

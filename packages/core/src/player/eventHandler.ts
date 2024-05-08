@@ -8,9 +8,9 @@ class EventHandler {
     document.addEventListener('visibilitychange', () => {
       const state = document.visibilityState
       if(state === 'hidden') {
-        console.log('隐藏')
+        // console.log('隐藏')
       } else {
-        console.log('显示')
+        // console.log('显示')
       }
     })
   }
