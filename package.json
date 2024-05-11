@@ -1,7 +1,6 @@
 {
   "name": "y-music-player",
-  "private": false,
-  "version": "1.0.2",
+  "private": true,
   "type": "module",
   "description": "",
   "scripts": {
