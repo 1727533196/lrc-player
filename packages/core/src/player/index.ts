@@ -5,7 +5,6 @@ import EventHandler from "./eventHandler";
 import {FLOAT_END_DURATION, FLOAT_START_DURATION} from "../enum";
 import {getLrcAnimationRule, isString} from "../utils";
 import '../styles/index.less'
-
 interface Core {
   animationFrameId: number | null
   curAnimations: WeakMap<object, CurContextAnimations> // 动画实例集合
