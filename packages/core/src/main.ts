@@ -1,4 +1,4 @@
 import './player/index'
-import './style.css'
-import './demo'
+// import './style.css'
+// import './demo'
 
