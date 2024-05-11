@@ -137,12 +137,6 @@ export function getLrcAnimationRule(
   return rule[key] as [Keyframe[], KeyframeAnimationOptions];
 }
 
-export function animate(el: HTMLElement, keyframes: Keyframe[], options?: KeyframeAnimationOptions | number) {
-  const style = getComputedStyle(el)
-
-  el.animate(keyframes, options)
-}
-
 export function isString(value: unknown) {
   return typeof value === 'string'
 }

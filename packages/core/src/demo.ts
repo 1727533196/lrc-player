@@ -14,7 +14,9 @@ const timeInputEl = document.querySelector('.input-time') as HTMLInputElement
 if(setTimeEl && timeInputEl) {
   setTimeEl.onclick = () => {
     console.log('timeInputEl.value', timeInputEl.value)
-    player.setTime(+timeInputEl.value)
+    player.setTime({
+      time: +timeInputEl.value,
+    })
   }
 }
 

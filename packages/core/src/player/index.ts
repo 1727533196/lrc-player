@@ -244,7 +244,7 @@ class Player {
       }
     }
     return new Promise((resolve, reject) => {
-      const process = async (index: number) => {
+      const process = (index: number) => {
         if (index >= yrcRule.length) {
           return resolve(curContextAnimations)
         }

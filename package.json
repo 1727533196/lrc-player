@@ -1,9 +1,8 @@
 {
-  "name": "MusicPlayer",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "music-player",
+  "private": false,
   "type": "module",
+  "description": "",
   "scripts": {
     "dev": "node scripts/dev.js core",
     "dev:vue": "node scripts/dev.js vue",
