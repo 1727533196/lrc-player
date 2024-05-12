@@ -1,8 +1,10 @@
 {
-  "name": "@y-music-player/core",
+  "name": "@lrc-player/core",
   "private": false,
   "version": "1.0.0",
   "type": "module",
+  "main": "dist/lrc-player-core.js",
+  "module": "dist/lrc-player-core.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,6 +12,13 @@
   },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "music",
+    "music-player",
+    "player",
+    "音乐",
+    "播放器组件"
   ],
   "publishConfig": {
     "access": "public"

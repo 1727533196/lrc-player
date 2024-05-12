@@ -40,7 +40,6 @@ class Player {
       clearTimeupdate: this.clearTimeupdate,
       isPlaying: this.isPlaying,
     })
-    console.log('eventHandler', eventHandler)
     this.audio = new Audio()
     // 绑定事件处理方法到类的实例上
     this.audio.addEventListener('error', this.handleAudioError)
@@ -244,6 +243,7 @@ class Player {
     }
     return new Promise((resolve, reject) => {
       const process = (index: number) => {
+
         if (index >= yrcRule.length) {
           return resolve(curContextAnimations)
         }
@@ -278,7 +278,7 @@ class Player {
         }
 
         const delayTime = +(+this.audio.currentTime.toFixed(2) - curYrcRule.cursor).toFixed(2)
-        const transition = delayTime > 0 ? (curYrcRule.transition - delayTime) * 1000 : curYrcRule.transition * 1000
+        const transition = curYrcRule.transition - delayTime > 0 ? (curYrcRule.transition - delayTime) * 1000 : curYrcRule.transition * 1000
 
         const scheduleAnimate = textEl.animate(...getLrcAnimationRule(transition, 'lrc',))
         const floatAnimate = textEl.animate(...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'))
@@ -291,7 +291,8 @@ class Player {
         // 在动画完成后执行处理
         scheduleAnimate.finished.then(() => {
           process(++index)
-        }).catch(() => {
+        }).catch((err) => {
+          console.log(err)
           return reject(curContextAnimations)
         })
       }
