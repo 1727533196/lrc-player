@@ -5,7 +5,8 @@ export default defineConfig({
     lib: {
       entry: 'src/main.ts',
       name: 'MusicPlayerCore',
-      fileName: 'music-player-core'
+      fileName: 'music-player-core',
+      formats: ['es']
     }
   }
 })
