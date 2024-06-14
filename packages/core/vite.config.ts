@@ -1,12 +1,16 @@
 import { defineConfig } from 'vite'
 
-export default defineConfig({
-  build: {
-    lib: {
-      entry: 'src/main.ts',
-      name: 'LrcPlayerCore',
-      fileName: 'lrc-player-core',
-      formats: ['es']
+// @ts-ignore
+export default defineConfig(() => {
+    return {
+      build: {
+        lib: {
+          entry: 'src/main.ts',
+          name: 'LrcPlayerCore',
+          fileName: 'lrc-player-core',
+          formats: ['es']
+        },
+        minify: false, // 禁用压缩
+      }
     }
-  }
 })

@@ -1,8 +1,8 @@
-import {parseYrc} from '../utils'
+import {formattingTime, parseYrc, smoothScrollTo} from '../utils'
 import Logger from '../logger'
 import { LyricsLine } from '../types/type'
 
-interface Utils {
+interface Props {
   getCurrentLrcLine: () => LyricsLine
   setTime: (options: {
     time?: number
@@ -12,14 +12,15 @@ interface Utils {
 
 type Target = HTMLDivElement | HTMLSpanElement
 class Lrc {
-  lrcVal: LyricsLine[] | null = null
+  lrcVal: LyricsLine[] | null = null // 会附带wait
+  pureLrc: LyricsLine[] | null = null // 不会附带wait
   el: HTMLElement | null = null
-  utils: Utils
+  props: Props
   playerItem: NodeListOf<HTMLDivElement & {children: HTMLCollectionOf<HTMLSpanElement>}>
   playerContainer: HTMLDivElement
-  constructor(el: HTMLElement, utils: Utils) {
-    this._initEl(el)
-    this.utils = utils
+  hintEl: HTMLDivElement | null // 时间提示元素缓存
+  constructor(props: Props) {
+    this.props = props
   }
 
   _initEl(el: HTMLElement) {
@@ -35,6 +36,7 @@ class Lrc {
   /* 更新歌词数据源，并且渲染 */
   _updateLrc(lrc: string) {
     this.lrcVal = parseYrc(lrc)
+    this.pureLrc = this.lrcVal.filter(line => !line.wait)
     console.log('this.lrcVal', this.lrcVal)
     if(!this.lrcVal) {
       return Logger.error('_updateLrc：歌词解析时为空：', this.lrcVal)
@@ -43,7 +45,7 @@ class Lrc {
   }
   _renderLrc(lrc: LyricsLine[]) {
     if (!this.el) {
-      return Logger.error(`渲染歌词时检查到el为空：${this.el}`)
+      return Logger.error(`渲染歌词时检查到el为空：${this.el}, 请确保已调用mount方法以挂载元素`)
     }
 
     let playerScroll = this.el.querySelector('.y-player-scroll') as HTMLDivElement
@@ -64,15 +66,37 @@ class Lrc {
       if(!line.wait) {
         return this._generateLyricsLineHtml(line)
       } else {
-        return this._generateWaitHtml()
+        return this._generateWaitHtml(line)
       }
     }).join('\n')
 
-    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll .y-player-item')
+    this.playerItem = this.el!.querySelectorAll('.y-player-container .y-player-scroll > *')
+
+    this.playerItem.forEach(el => {
+      if(el.classList.contains('y-player-item')) {
+        this._mouseenter(el)
+        this._mouseleave(el)
+      }
+    })
   }
-  _generateWaitHtml() {
+  _generateLyricsLineHtml(line: LyricsLine) {
+    const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
+      line.yrc.map((segment) => {
+        const glowYrc = segment.glowYrc
+        if(glowYrc) {
+          return `<div class="y-glow-yrc y-word">${glowYrc.map((glow) => {
+            return `<span class="y-text">${glow.text}</span>`
+          }).join('')}</div>`
+        }
+        return `<span class="y-text y-word">${segment.text}</span>`
+      }).join(' ')
+    }</div>`
+
+    return lyricsLineHtml
+  }
+  _generateWaitHtml(line: LyricsLine) {
     const waitHtml = `
-      <div class="y-wait-item">
+      <div style="height: 0;padding: 0 60px; opacity: 0" data-index=${line.index} class="y-wait-item">
         <div class="y-wait"></div>
         <div class="y-wait"></div>
         <div class="y-wait"></div>
@@ -87,34 +111,20 @@ class Lrc {
       const scrollHalfHeight = this.playerContainer.clientHeight / 2
       const lineHalfHeight = curLine.clientHeight / 2
       const lineTop = curLine.offsetTop
+      const top = (lineTop - (scrollHalfHeight - lineHalfHeight) + 100)
 
-      this.playerContainer.scrollTo({
-        behavior: 'smooth',
-        top: (lineTop - (scrollHalfHeight - lineHalfHeight) + 100),
-      });
+      smoothScrollTo(this.playerContainer, top, 400, 'power1.out')
+      // this.playerContainer.scrollTo({
+      //   behavior: 'smooth',
+      //   top
+      // });
     }
-
   }
   _getCurLine(index: number) {
     return this.playerItem[index]
   }
   _getCurTextEls(index: number) {
     return this.playerItem[index].children
-  }
-  _generateLyricsLineHtml(line: LyricsLine) {
-    const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
-        line.yrc.map((segment) => {
-          const glowYrc = segment.glowYrc
-          if(glowYrc) {
-            return `<div class="y-glow-yrc">${glowYrc.map((glow) => {
-              return `<span class="y-text">${glow.text}</span>`
-            }).join('')}</div>`
-          }
-          return `<span class="y-text">${segment.text}</span>`
-        }).join(' ')
-    }</div>`
-
-    return lyricsLineHtml
   }
   _getLrc(): LyricsLine[] {
     return this.lrcVal || []
@@ -130,23 +140,47 @@ class Lrc {
       </div>`
     }
   }
+  _renderTime(time: number) {
+    if(!this.hintEl) {
+      this.hintEl = document.createElement('div')
+      this.hintEl.className = 'y-hint-time'
+    }
+
+    this.hintEl.innerText = formattingTime(time)
+
+    return this.hintEl
+  }
+  _mouseenter(el: HTMLDivElement) {
+    el.addEventListener('mouseenter', (event) => {
+      // 获取事件触发的目标元素
+      let target = event.target as Target;
+      let el = this.findCorrectEl(target)
+
+      const index = +el.dataset.index!
+      const hintEl = this._renderTime(this._getLrc()[index].time * 1000)
+      if(!el.contains(hintEl)) {
+        el.appendChild(hintEl)
+      }
+    })
+  }
+  _mouseleave(el: HTMLDivElement) {
+    el.addEventListener('mouseleave', (event) => {
+      let target = event.target as Target
+
+      if(this.hintEl && target.contains(this.hintEl)) {
+        target.removeChild(this.hintEl)
+      }
+    })
+  }
   _click(playerScroll: HTMLDivElement) {
     playerScroll.addEventListener('click', (event) => {
       // 获取事件触发的目标元素
-      let targetElement = event.target as Target;
-      let el = targetElement
-      if (!targetElement.classList.contains('y-player-item')) {
-        for(let i = 0; i < 5; i++) {
-          targetElement = targetElement.parentElement as Target
-          if(targetElement && targetElement.classList.contains('y-player-item')) {
-            el = targetElement
-            break
-          }
-        }
-      }
+      let target = event.target as Target;
+      let el = this.findCorrectEl(target)
+
       if(el.dataset.index) {
         const index = +el.dataset!.index as number
-        this.utils.setTime({
+        this.props.setTime({
           time: this._getLrc()[index].time,
           index,
         })
@@ -155,6 +189,19 @@ class Lrc {
       }
 
     })
+  }
+  findCorrectEl(targetElement: HTMLElement) {
+    let result = targetElement
+    if (!targetElement.classList.contains('y-player-item')) {
+      for(let i = 0; i < 5; i++) {
+        targetElement = targetElement.parentElement as Target
+        if(targetElement && targetElement.classList.contains('y-player-item')) {
+          result = targetElement
+          break
+        }
+      }
+    }
+    return result
   }
 }
 

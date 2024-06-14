@@ -1,26 +1,26 @@
-interface Utils {
+interface Props {
   setTime: (options: {
     time?: number
     index?: number
   }) => void
   clearTimeupdate: () => void
-  isPlaying: boolean
+  getPlayStatus: () => boolean
 }
 
 class EventHandler {
-  utils: Utils
-  constructor(utils: Utils) {
-    this.utils = utils
+  props: Props
+  constructor(props: Props) {
+    this.props = props
     this.disposeVisibility()
   }
   disposeVisibility() {
     document.addEventListener('visibilitychange', () => {
       const state = document.visibilityState
       if(state === 'hidden') {
-        this.utils.clearTimeupdate()
+        this.props.clearTimeupdate()
       } else {
-        if(this.utils.isPlaying) {
-          this.utils.setTime({})
+        if(this.props.getPlayStatus()) {
+          this.props.setTime({})
         }
       }
     })

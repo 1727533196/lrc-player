@@ -1,13 +1,13 @@
 {
   "name": "@lrc-player/core",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.4",
   "type": "module",
   "main": "dist/lrc-player-core.js",
   "module": "dist/lrc-player-core.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && tsc",
     "preview": "vite preview"
   },
   "files": [

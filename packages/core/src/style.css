@@ -94,3 +94,11 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.line {
+  background-color: #00a6ff;
+  height: 1px;
+  top: 382px;
+  position: absolute;
+  width: 700px;
+}

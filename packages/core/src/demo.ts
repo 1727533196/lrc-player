@@ -1,8 +1,12 @@
 import Player from './player/index'
-import lrc from '../ttml/golden hour.txt'
-import audioUrl from '../ttml/golden hour.m4a'
+import '../dist/style.css'
+import './style.css'
+import lrc from '../yrc/sweet.txt'
+import audioUrl from '../yrc/sweet.flac'
 
-const player = new Player(document.querySelector('#app') as HTMLElement)
+const player = new Player()
+
+player.mount(document.querySelector('#app') as HTMLElement)
 
 const initEl = document.querySelector('.btn.init') as HTMLButtonElement
 const playEl = document.querySelector('.btn.play') as HTMLButtonElement
@@ -20,8 +24,6 @@ if(setTimeEl && timeInputEl) {
   }
 }
 
-console.log('player', player)
-
 if(currentEl) {
   currentEl.onclick = () => {
     console.log(player.getCurrentLrcLine());
@@ -31,7 +33,7 @@ if(currentEl) {
 
 const url = audioUrl
 
-player.updateVolume(0.5)
+player.updateVolume(0.05)
 if(initEl) {
   initEl.addEventListener('click', async () => {
     const response = await fetch(lrc)

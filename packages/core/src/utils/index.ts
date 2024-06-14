@@ -1,7 +1,8 @@
 // 解析逐字歌词
-import {LyricsFragment, LyricsLine} from '../types/type'
+import {LrcAnimationRuleKey, LyricsFragment, LyricsLine} from '../types/type'
 
 export function parseYrc(yrc: string) {
+  yrc = yrc.replace(/[\r\n]/g, '');
   const result: LyricsLine[] = []
   let obj: LyricsLine = {
     time: 0,
@@ -48,15 +49,30 @@ export function parseYrc(yrc: string) {
         const nextStartIndex = yrc.indexOf('[', i + 1)
         const nextEndIndex = yrc.indexOf(']', i + 1)
         const [nextTime] = yrc.slice(nextStartIndex + 1, nextEndIndex).split(',').map(item => +item / 1000)
+        const total = +(obj.time + duration).toFixed(2)
 
-        if ((nextTime - +(obj.time + duration).toFixed(2)) > 8) {
+        if ((nextTime - total) > 8) {
+          // time = last.time + last.duration
+          // duration = nextTime - time
+          const waitDuration = +(nextTime - total).toFixed(2)
+          const waitTransition = (+(waitDuration / 3).toFixed(2)) - 0.5
+
           result.push({
-            time: 0,
-            duration: 0,
-            index: 0,
+            time: total,
+            duration: waitDuration,
+            index: index,
             wait: true,
-            yrc: []
+            yrc: Array(3).fill(0).map((_, index) => {
+              return {
+                text: '',
+                transition: waitTransition,
+                cursor: total + waitTransition * index,
+                glowYrc: null,
+                wait: true,
+              }
+            })
           })
+          index++
         }
       }
 
@@ -74,7 +90,7 @@ export function parseYrc(yrc: string) {
         text += yrc[o]
       }
       let glowYrc: LyricsFragment[] | null = null
-      if(transition >= 1 && text.trim().length > 0) {
+      if(transition > 1 && text.trim().length > 2) {
 
         glowYrc = []
         const len = text.length
@@ -101,7 +117,7 @@ export function parseYrc(yrc: string) {
 
 export function getLrcAnimationRule(
   duration: number,
-  key: 'lrc' | 'floatStart' | 'floatEnd' | 'glow',
+  key: LrcAnimationRuleKey,
 ): [Keyframe[], KeyframeAnimationOptions] {
   const rule = {
     lrc: [
@@ -126,11 +142,68 @@ export function getLrcAnimationRule(
       },
     ],
     glow: [
-      [{ textShadow: '0 0 10px rgba(255, 255, 255, 0)' }, { textShadow: '0 0 10px rgba(255, 255, 255, 0.7)' }],
+      [
+        { transform: 'translateY(0)' },
+        { transform: `translateY(${-2}px)`}
+      ],
       {
         duration: duration,
         fill: 'forwards',
       },
+    ],
+    waitStart1: [
+      [
+        {height: 0, padding: '0 60px'},
+        {height: '15px', padding: '10px 60px'}
+      ],
+      {
+        duration: duration,
+        fill: "forwards",
+      }
+    ],
+    waitStart2: [
+      [
+        {opacity: 0},
+        {opacity: 1},
+      ],
+      {
+        duration: duration,
+        fill: "forwards",
+        easing: 'ease-in-out',
+        delay: 300,
+      }
+    ],
+    waitEnd1: [
+      [
+        {height: '15px', padding: '10px 60px'},
+        {height: 0, padding: '0 60px'},
+      ],
+      {
+        duration: duration,
+        fill: "forwards",
+      }
+    ],
+    waitEnd2: [
+      [
+        {opacity: 1},
+        {opacity: 0},
+      ],
+      {
+        duration: duration,
+        fill: "forwards",
+        easing: 'ease-in-out',
+      }
+    ],
+    waitAnimate: [
+      [
+        {backgroundColor: 'rgba(255,255,255, 0.1)'},
+        {backgroundColor: 'rgba(255,255,255, 1)'},
+      ],
+      {
+        duration: duration,
+        fill: "forwards",
+        easing: 'ease-in-out',
+      }
     ]
   }
 
@@ -143,4 +216,65 @@ export function isString(value: unknown) {
 
 export function isObject(value: unknown) {
   return value && typeof value === 'object'
+}
+
+export function formattingTime(msec: number) {
+  let result = ''
+  const sec = Math.floor(msec / 1000 % 60)
+  const minute = Math.floor((msec / 1000 - sec) / 60)
+
+  result = `${minute.toString().length <= 1
+    ? '0'+minute : minute}:${sec.toString().length <= 1 ? '0' + sec : sec}`
+
+  return result
+}
+
+/**
+ * 使用 requestAnimationFrame 实现平滑滚动到指定位置
+ * @param {HTMLElement} element - 需要滚动的元素
+ * @param {number} targetTop - 目标滚动位置（相对于元素顶部）
+ * @param {number} duration - 滚动时间（毫秒）
+ * @param {function} easing - 缓动函数
+ */
+export function smoothScrollTo(element: HTMLElement, targetTop: number, duration: number, easing: 'linear' | 'power1.out' | 'easeInOutCubic') {
+  // 常用的缓动函数
+  function easeInOutCubic(t: number) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function linear(t: number) {
+    return t;
+  }
+
+  function power1Out(t: number) {
+    return 1 - Math.pow(1 - t, 1);
+  }
+
+  const easingConfig = {
+    linear,
+    easeInOutCubic,
+    'power1.out': power1Out,
+  }
+
+  const startTop = element.scrollTop;
+  const distance = targetTop - startTop;
+  let startTime: number | null = null;
+
+  function scrollStep(timestamp: number) {
+    if (!startTime) startTime = timestamp;
+    const progress = timestamp - startTime;
+    const percent = Math.min(progress / duration, 1);
+
+    element.scrollTop = startTop + distance * easingConfig[easing](percent);
+
+    if (progress < duration) {
+      requestAnimationFrame(scrollStep);
+    }
+  }
+
+  requestAnimationFrame(scrollStep);
+}
+
+export function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj))
 }

@@ -10,12 +10,13 @@
       padding: @player_padding;
       white-space: pre;
       flex-wrap: wrap;
+      position: relative;
       &:hover {
         background-color: rgba(255,255,255, 0.05);
         border-radius: 10px;
       }
       .y-text {
-        background: rgba(255,255,255,0.3) -webkit-linear-gradient(left, #fff, #fff) no-repeat 0 0;;
+        background: rgba(255,255,255,0.3) -webkit-linear-gradient(left, #fff, #fff) no-repeat 0 0;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-size: 0% 100%;
@@ -24,10 +25,19 @@
         font-weight: 600;
         display: inline-block;
       }
+      .y-hint-time {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        font-weight: 600;
+      }
     }
     .y-wait-item {
       display: flex;
       padding: @player_padding;
+      visibility: hidden;
       .y-wait {
         height: 15px;
         width: 15px;

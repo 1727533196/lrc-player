@@ -8,6 +8,7 @@ export interface LyricsFragment {
 // 定义歌词行的类型
 export interface Yrc extends LyricsFragment{
   glowYrc: LyricsFragment[] | null
+  wait?: boolean
 }
 
 export type LyricsLine = {
@@ -17,3 +18,5 @@ export type LyricsLine = {
   yrc: Yrc[]
   wait?: boolean
 }
+
+export type LrcAnimationRuleKey = 'lrc' | 'floatStart' | 'floatEnd' | 'glow' | 'waitStart1' | 'waitStart2' | 'waitAnimate' | 'waitEnd1' | 'waitEnd2'
