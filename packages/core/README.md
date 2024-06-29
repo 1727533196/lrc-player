@@ -16,16 +16,12 @@ player.updateAudioUrl(data)
 ## API
 
 ### function
-* `player.play()`
+* `player.play()` 开始播放
   * params：`无参数`
-  * 开始播放
-* `player.pause()` 
+* `player.pause()` 暂停
   * params：`无参数`
-  * 暂停
-* `player.updateAudioUrl(url, data)`
-  * `url` `data`：
-    * url：`string`
-    * data：`object`
-  * 更新源数据
-* `player.setTime(options)`
+* `player.updateAudioLrc(lrc)` 更新歌词
+  * `lrc` [`LyricsLine[]`](src/types/type.ts)：
+* `player.syncIndex()` 同步歌词当前行，调用它可更改当前播放行
   * `index?: number`
+* `uninstall` 卸载

@@ -104,9 +104,6 @@ class Player {
       Logger.error('调用pause方法时抛出了异常：', e)
     }
   }
-  updateVolume = (volume: number) => {
-    // this.audio.volume = volume
-  }
   updateIndex = (index: number) => {
     this.lastIndex = this.index
     this.index = index
@@ -117,11 +114,6 @@ class Player {
   }
   syncIndex = (index?: number) => {
     let sequence = 0
-    // 跳转时间时记得把animation清空掉，以防止play时调用
-    // if(time) {
-    //   // this.audio.currentTime = time
-    //   cb(time)
-    // }
     // 两种情况，附带index的通常是点击歌词，没有的一般是快进
     if (index) {
       this.updateIndex(index)
