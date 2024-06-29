@@ -1,1 +1,4 @@
-# 原生js封装的音乐播放器组件，同时支持vue和react,项目仍在进行中
+## @lrc-player
+
+## 若要使用class方式可用它 [Core](packages/core)
+

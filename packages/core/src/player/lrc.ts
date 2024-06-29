@@ -4,16 +4,13 @@ import { LyricsLine } from '../types/type'
 
 interface Props {
   getCurrentLrcLine: () => LyricsLine
-  setTime: (options: {
-    time?: number
-    index?: number
-  }) => void
+  setTime: (index?: number) => void
+  click: (time: number, index: number) => void
 }
 
 type Target = HTMLDivElement | HTMLSpanElement
 class Lrc {
-  lrcVal: LyricsLine[] | null = null // 会附带wait
-  pureLrc: LyricsLine[] | null = null // 不会附带wait
+  lrcVal: LyricsLine[] | null = null
   el: HTMLElement | null = null
   props: Props
   playerItem: NodeListOf<HTMLDivElement & {children: HTMLCollectionOf<HTMLSpanElement>}>
@@ -34,9 +31,8 @@ class Lrc {
     }
   }
   /* 更新歌词数据源，并且渲染 */
-  _updateLrc(lrc: string) {
-    this.lrcVal = parseYrc(lrc)
-    this.pureLrc = this.lrcVal.filter(line => !line.wait)
+  _updateLrc(lrc: LyricsLine[]) {
+    this.lrcVal = lrc
     console.log('this.lrcVal', this.lrcVal)
     if(!this.lrcVal) {
       return Logger.error('_updateLrc：歌词解析时为空：', this.lrcVal)
@@ -180,10 +176,9 @@ class Lrc {
 
       if(el.dataset.index) {
         const index = +el.dataset!.index as number
-        this.props.setTime({
-          time: this._getLrc()[index].time,
-          index,
-        })
+        const time = this._getLrc()[index].time
+
+        this.props.click(time, index)
       } else {
         Logger.error('事件处理程序click：index为空', el.dataset.index)
       }

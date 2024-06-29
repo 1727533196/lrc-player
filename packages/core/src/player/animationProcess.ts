@@ -78,17 +78,17 @@ class AnimationProcess {
 
         textEl.setAttribute('data-is-transition', 'true')
 
-        this.animations = [lrcAnimate, floatAnimate]
+        this.animations = [lrcAnimate]
+
+        this.lrcAnimations.set(textEl, {
+          lrc: lrcAnimate,
+          float: floatAnimate,
+        })
         // 在动画完成后执行处理
         lrcAnimate.finished.then(() => {
 
           this.dispatchAnimation('clear')
-          this.lrcAnimations.set(textEl, {
-            lrc: lrcAnimate,
-            float: floatAnimate,
-          })
           process(++index)
-
         }).catch((err: string) => {
           console.log(err)
 
@@ -127,6 +127,20 @@ class AnimationProcess {
     } else if(type === 'clear') {
       this.animations = []
     }
+  }
+  clearAllAnimate() {
+    const lrcAnimations = this.lrcAnimations
+
+    lrcAnimations.forEach((value) => {
+      value.lrc.cancel()
+      value.float.cancel()
+    })
+    this.lrcAnimations.clear()
+
+    this.animations.forEach((value) => {
+      value.cancel()
+    })
+    this.animations = []
   }
   getAnimations() {
     return this.animations

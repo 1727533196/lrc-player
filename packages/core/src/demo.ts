@@ -5,8 +5,9 @@ import lrc from '../yrc/sweet.txt'
 import audioUrl from '../yrc/sweet.flac'
 
 const player = new Player()
+const audio = new Audio()
 
-player.mount(document.querySelector('#app') as HTMLElement)
+player.mount(document.querySelector('#app') as HTMLElement, audio)
 
 const initEl = document.querySelector('.btn.init') as HTMLButtonElement
 const playEl = document.querySelector('.btn.play') as HTMLButtonElement
@@ -18,6 +19,7 @@ const timeInputEl = document.querySelector('.input-time') as HTMLInputElement
 if(setTimeEl && timeInputEl) {
   setTimeEl.onclick = () => {
     console.log('timeInputEl.value', timeInputEl.value)
+    audio.currentTime =
     player.setTime({
       time: +timeInputEl.value,
     })
@@ -44,11 +46,13 @@ if(initEl) {
 
 if(playEl) {
   playEl.addEventListener('click', async () => {
+    audio.play()
     player.play()
   })
 }
 if(pauseEl) {
   pauseEl.addEventListener('click', async () => {
+    audio.pause()
     player.pause()
   })
 }

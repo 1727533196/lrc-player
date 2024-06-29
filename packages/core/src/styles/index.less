@@ -1,10 +1,15 @@
 @player_padding: 10px 60px;
 
+
 .y-player-container {
-  height: 80vh;
+  height: 100%;
   overflow: auto;
+
   .y-player-scroll {
     position: relative;
+    padding-bottom: 300px;
+    padding-top: 200px;
+
     .y-player-item {
       display: flex;
       padding: @player_padding;
@@ -24,6 +29,7 @@
         font-size: 23px;
         font-weight: 600;
         display: inline-block;
+        align-content: end;
       }
       .y-hint-time {
         position: absolute;

@@ -1,8 +1,5 @@
 interface Props {
-  setTime: (options: {
-    time?: number
-    index?: number
-  }) => void
+  setTime: (index?: number) => void
   clearTimeupdate: () => void
   getPlayStatus: () => boolean
 }
@@ -20,7 +17,7 @@ class EventHandler {
         this.props.clearTimeupdate()
       } else {
         if(this.props.getPlayStatus()) {
-          this.props.setTime({})
+          this.props.setTime()
         }
       }
     })

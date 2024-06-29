@@ -2,13 +2,17 @@ import Lrc from './lrc'
 import Logger from '../logger'
 import {LyricsLine} from '../types/type'
 import EventHandler from "./eventHandler";
-import {Wait_START_DURATION_1, Wait_START_DURATION_2} from "../enum";
-import {getLrcAnimationRule} from "../utils";
 import '../styles/index.less'
 import AnimationProcess from "./animationProcess";
+
 interface Core {
   animationFrameId: number | null
   updateTimeStatus: 'close' | 'open' // 音乐timeupdate事件是否打开
+}
+
+interface Options {
+  click: (time: number, index: number) => void
+
 }
 
 // 需要重置的数据
@@ -29,16 +33,31 @@ class Player {
   index: number = 0 // 当前行
   lastIndex: number = 0 // 上一次的index
 
-  constructor() {
-    this.init()
+  constructor(options: Options) {
+    this.init(options)
   }
-  mount(el: HTMLElement) {
+  mount(el: HTMLElement, audio: any) {
+    if(!audio) {
+      return Logger.error('在调用mount方法时没用提供audio: ', audio)
+    }
+    this.audio = audio
+    // 绑定事件处理方法到类的实例上
+    // this.audio.addEventListener('error', this.handleAudioError)
     this.lrc._initEl(el)
   }
-  protected init = () => {
+  uninstall = () => {
+    this.clearTimeupdate();
+    this.animationProcess.clearAllAnimate()
+    this._core = {
+      ...this._core,
+      ...replaceable,
+    }
+  }
+  protected init = (options: Options) => {
     this.lrc = new Lrc({
       getCurrentLrcLine: this.getCurrentLrcLine,
       setTime: this.setTime,
+      click: options.click,
     })
 
     this.eventHandler = new EventHandler({
@@ -50,18 +69,14 @@ class Player {
     this.animationProcess = new AnimationProcess({
       getTime: this.getTime,
     })
-
-    this.audio = new Audio()
-    // 绑定事件处理方法到类的实例上
-    this.audio.addEventListener('error', this.handleAudioError)
   }
   getPlayStatus = () => this.isPlaying
-  play = async () => {
+  play = () => {
     if (this.isPlaying) {
       return
     }
     try {
-      await this.audio.play()
+      // await this.audio.play()
       this.isPlaying = true
       this.animationProcess.dispatchAnimation('play')
       // 没有逐字歌词接力，并且updateTime还是为关闭状态时，
@@ -81,7 +96,7 @@ class Player {
       return
     }
     try {
-      this.audio.pause()
+      // this.audio.pause()
       this.clearTimeupdate()
       this.isPlaying = false
       this.animationProcess.dispatchAnimation('pause')
@@ -90,7 +105,7 @@ class Player {
     }
   }
   updateVolume = (volume: number) => {
-    this.audio.volume = volume
+    // this.audio.volume = volume
   }
   updateIndex = (index: number) => {
     this.lastIndex = this.index
@@ -100,21 +115,16 @@ class Player {
   getIndex = () => {
     return this.index
   }
-  setTime = async (options: {
-    time?: number
-    index?: number
-  }) => {
-    if (!this.audio.src || options.time === this.getTime()) {
-      return
-    }
+  syncIndex = (index?: number) => {
     let sequence = 0
     // 跳转时间时记得把animation清空掉，以防止play时调用
-    if(options.time) {
-      this.audio.currentTime = options.time
-    }
+    // if(time) {
+    //   // this.audio.currentTime = time
+    //   cb(time)
+    // }
     // 两种情况，附带index的通常是点击歌词，没有的一般是快进
-    if (options.index) {
-      this.updateIndex(options.index)
+    if (index) {
+      this.updateIndex(index)
     } else {
       // 当没有明确的index指引时，这个时候我们要找到index，并且定位到逐字
       const targetIndex = this.getCurrentLrcLine().index
@@ -122,29 +132,25 @@ class Player {
       sequence = this.getLyricsIndexByCharacter(targetIndex);
     }
     this.animationProcess.dispatchAnimation('cancel')
-    await this.play()
+    this.play()
     this.timeupdate(sequence)
   }
   getTime = () => {
     return +this.audio.currentTime.toFixed(2)
   }
   /* 更新url, 更新歌词，从而使其重新渲染 */
-  updateAudioUrl = (url: string, lrc: string) => {
+  updateAudioLrc = async (lrc: LyricsLine[]) => {
     // 移除旧的事件监听器
-    this.audio.removeEventListener('loadedmetadata', this.onCanPlayThroug)
 
-    this.audio.src = url
     this.pause()
     this.lrc._updateLrc(lrc)
     this.updateIndex(0)
 
-    this._core = {
-      ...this._core,
-     ...replaceable,
-    }
+    this.uninstall()
 
-    // 监听audio是否加载完毕
-    this.audio.addEventListener('loadedmetadata', this.onCanPlayThroug)
+    this.play()
+    this.timeupdate()
+
   }
   timeupdate(sequence: number = 0) {
     let someCondition = true
@@ -158,6 +164,7 @@ class Player {
       const yrc = lrc[index].yrc
       const time = lrc[index].time
 
+      // console.log(index, curLineEl, yrc, time)
       //0  5 >= 6  index = 0++ 在第一个检查完之后index就为1了，实际上应该等待过渡结束后
       //1  6 >= 7  index = 1++ 同理，实际上应该等待过渡结束后
       // 不++的话会导致一直进入这个判断。解决办法：
@@ -174,18 +181,20 @@ class Player {
           // })
         }
 
+        someCondition = false
         this.animationProcess.disposeLrcAnimationProcess(
           curLineEl,
           yrc,
           sequence,
         ).then(() => {
+          // console.log('done')
           this.updateIndex(this.getIndex() + 1)
           this.timeupdate()
         }).catch(() => {
 
         })
 
-        someCondition = false
+
       }
 
       this._core.animationFrameId = requestAnimationFrame(() => {
@@ -247,14 +256,6 @@ class Player {
         return item
       }
     }) as LyricsLine
-  }
-  protected onCanPlayThroug = async () => {
-    try {
-      await this.play()
-      this.timeupdate()
-    } catch (error) {
-      Logger.error('更新歌词时播放失败：', error)
-    }
   }
   protected handleAudioError = () => {
     const error = this.audio.error;
