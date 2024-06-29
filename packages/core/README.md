@@ -10,7 +10,7 @@ const player = new Player()
 player.mount(document.querySelector('#app') as HTMLElement, audio)
 
 // 更新url与歌词，通常在切换下一首或上一首时调用这个
-player.updateAudioUrl(data)
+player.updateAudioLrc(lrc)
 ```
    
 ## API
