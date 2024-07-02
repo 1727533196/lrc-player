@@ -1,6 +1,7 @@
-import {formattingTime, parseYrc, smoothScrollTo} from '../utils'
+import {formattingTime, smoothScrollTo} from '../utils'
 import Logger from '../logger'
-import { LyricsLine } from '../types/type'
+import {LyricsLine, YrcLine} from '../types/type'
+import {WordType} from "./index.ts";
 
 interface Props {
   getCurrentLrcLine: () => LyricsLine
@@ -11,16 +12,19 @@ interface Props {
 type Target = HTMLDivElement | HTMLSpanElement
 class Lrc {
   lrcVal: LyricsLine[] | null = null
-  el: HTMLElement | null = null
+  el: Element | null = null
   props: Props
   playerItem: NodeListOf<HTMLDivElement & {children: HTMLCollectionOf<HTMLSpanElement>}>
   playerContainer: HTMLDivElement
   hintEl: HTMLDivElement | null // 时间提示元素缓存
+  timer: number
+  isUserWheel: boolean = false
+  wordType: WordType
   constructor(props: Props) {
     this.props = props
   }
 
-  _initEl(el: HTMLElement) {
+  _initEl(el: Element) {
     try {
       if (!el) {
         throw `el元素不存在：${el}`
@@ -31,15 +35,15 @@ class Lrc {
     }
   }
   /* 更新歌词数据源，并且渲染 */
-  _updateLrc(lrc: LyricsLine[]) {
+  _updateLrc(lrc: LyricsLine[], type: WordType) {
     this.lrcVal = lrc
-    console.log('this.lrcVal', this.lrcVal)
+    this.wordType = type
     if(!this.lrcVal) {
       return Logger.error('_updateLrc：歌词解析时为空：', this.lrcVal)
     }
     this._renderLrc(this.lrcVal)
   }
-  _renderLrc(lrc: LyricsLine[]) {
+  _renderLrc(lrc: LyricsLine[] | YrcLine[]) {
     if (!this.el) {
       return Logger.error(`渲染歌词时检查到el为空：${this.el}, 请确保已调用mount方法以挂载元素`)
     }
@@ -55,12 +59,17 @@ class Lrc {
       this.playerContainer.appendChild(playerScroll)
       this.el.appendChild(this.playerContainer)
 
+      this._scroll(this.playerContainer)
       this._click(playerScroll)
     }
 
     playerScroll!.innerHTML = lrc.map((line) => {
       if(!line.wait) {
-        return this._generateLyricsLineHtml(line)
+        if(this.wordType === 'lrc') {
+          return this._generateLyricsLineHtml(line)
+        } else if(this.wordType === 'yrc') {
+          return this._generateYrcLineHtml(line)
+        }
       } else {
         return this._generateWaitHtml(line)
       }
@@ -75,16 +84,24 @@ class Lrc {
       }
     })
   }
+  _generateYrcLineHtml(line: YrcLine) {
+    const YrcLineHtml = `
+      <div data-index=${line.index} class="y-player-item y-yrc-item">
+      <span class="y-text">${line.text}</span>
+</div>
+    `
+    return YrcLineHtml
+  }
   _generateLyricsLineHtml(line: LyricsLine) {
     const lyricsLineHtml = `<div data-index=${line.index} class="y-player-item">${
       line.yrc.map((segment) => {
         const glowYrc = segment.glowYrc
         if(glowYrc) {
-          return `<div class="y-glow-yrc y-word">${glowYrc.map((glow) => {
+          return `<div class="y-glow-yrc">${glowYrc.map((glow) => {
             return `<span class="y-text">${glow.text}</span>`
           }).join('')}</div>`
         }
-        return `<span class="y-text y-word">${segment.text}</span>`
+        return `<span class="y-text">${segment.text}</span>`
       }).join(' ')
     }</div>`
 
@@ -100,7 +117,10 @@ class Lrc {
     `
     return waitHtml
   }
-  _moveScroll(index: number) {
+  _moveScroll(index: number, force = false) {
+    if(this.isUserWheel && !force) {
+      return
+    }
     const curLine = this._getCurLine(index)
 
     if(this.playerContainer) {
@@ -166,6 +186,16 @@ class Lrc {
       if(this.hintEl && target.contains(this.hintEl)) {
         target.removeChild(this.hintEl)
       }
+    })
+  }
+  _scroll(el: HTMLDivElement) {
+    el.addEventListener('wheel', () => {
+      this.isUserWheel = true
+
+      clearTimeout(this.timer)
+      this.timer = setTimeout(() => {
+        this.isUserWheel = false
+      }, 3000)
     })
   }
   _click(playerScroll: HTMLDivElement) {

@@ -8,12 +8,15 @@ import AnimationProcess from "./animationProcess";
 interface Core {
   animationFrameId: number | null
   updateTimeStatus: 'close' | 'open' // 音乐timeupdate事件是否打开
+  wordType: WordType
 }
 
 interface Options {
   click: (time: number, index: number) => void
 
 }
+
+export type WordType = 'yrc' | 'lrc'
 
 // 需要重置的数据
 const replaceable = {
@@ -29,6 +32,7 @@ class Player {
   _core: Core = {
     animationFrameId: null,
     ...replaceable,
+    wordType: 'lrc'
   }
   index: number = 0 // 当前行
   lastIndex: number = 0 // 上一次的index
@@ -36,13 +40,11 @@ class Player {
   constructor(options: Options) {
     this.init(options)
   }
-  mount(el: HTMLElement, audio: any) {
+  mount(el: Element, audio: any) {
     if(!audio) {
       return Logger.error('在调用mount方法时没用提供audio: ', audio)
     }
     this.audio = audio
-    // 绑定事件处理方法到类的实例上
-    // this.audio.addEventListener('error', this.handleAudioError)
     this.lrc._initEl(el)
   }
   uninstall = () => {
@@ -56,12 +58,12 @@ class Player {
   protected init = (options: Options) => {
     this.lrc = new Lrc({
       getCurrentLrcLine: this.getCurrentLrcLine,
-      setTime: this.setTime,
+      setTime: this.syncIndex,
       click: options.click,
     })
 
     this.eventHandler = new EventHandler({
-      setTime: this.setTime,
+      setTime: this.syncIndex,
       clearTimeupdate: this.clearTimeupdate,
       getPlayStatus: this.getPlayStatus,
     })
@@ -76,7 +78,6 @@ class Player {
       return
     }
     try {
-      // await this.audio.play()
       this.isPlaying = true
       this.animationProcess.dispatchAnimation('play')
       // 没有逐字歌词接力，并且updateTime还是为关闭状态时，
@@ -96,7 +97,6 @@ class Player {
       return
     }
     try {
-      // this.audio.pause()
       this.clearTimeupdate()
       this.isPlaying = false
       this.animationProcess.dispatchAnimation('pause')
@@ -104,10 +104,10 @@ class Player {
       Logger.error('调用pause方法时抛出了异常：', e)
     }
   }
-  updateIndex = (index: number) => {
+  updateIndex = (index: number, force = false) => {
     this.lastIndex = this.index
     this.index = index
-    this.lrc._moveScroll(index)
+    this.lrc._moveScroll(index, force)
   }
   getIndex = () => {
     return this.index
@@ -130,19 +130,17 @@ class Player {
   getTime = () => {
     return +this.audio.currentTime.toFixed(2)
   }
-  /* 更新url, 更新歌词，从而使其重新渲染 */
-  updateAudioLrc = async (lrc: LyricsLine[]) => {
-    // 移除旧的事件监听器
-
+  /* 更新url, 更新歌词，从而使其重新渲染  yrc 表示逐行，lrc表示逐字 */
+  updateAudioLrc = async (lrc: LyricsLine[], type: 'yrc' | 'lrc') => {
     this.pause()
-    this.lrc._updateLrc(lrc)
-    this.updateIndex(0)
 
+    this._core.wordType = type
+
+    this.lrc._updateLrc(lrc, type)
+    this.updateIndex(0, true)
     this.uninstall()
-
     this.play()
     this.timeupdate()
-
   }
   timeupdate(sequence: number = 0) {
     let someCondition = true
@@ -150,17 +148,13 @@ class Player {
     const updateTime = () => {
       const currentTime = this.getTime()
       const lrc = this.lrc._getLrc()
-
       const index = this.getIndex()
-      const curLineEl = this.lrc.playerItem[index] // 当前元素
-      const yrc = lrc[index].yrc
       const time = lrc[index].time
 
-      // console.log(index, curLineEl, yrc, time)
-      //0  5 >= 6  index = 0++ 在第一个检查完之后index就为1了，实际上应该等待过渡结束后
-      //1  6 >= 7  index = 1++ 同理，实际上应该等待过渡结束后
-      // 不++的话会导致一直进入这个判断。解决办法：
       if (currentTime >= time) {
+        const curLineEl = this.lrc.playerItem[index] // 当前元素
+        const wordType = this._core.wordType
+
         if(lrc[index].wait) {
           // curLineEl.style.visibility = 'visible'
           // const [WaitFrames1, WaitOptions1] = getLrcAnimationRule(Wait_START_DURATION_1, 'waitStart1')
@@ -174,17 +168,22 @@ class Player {
         }
 
         someCondition = false
-        this.animationProcess.disposeLrcAnimationProcess(
-          curLineEl,
-          yrc,
-          sequence,
-        ).then(() => {
-          // console.log('done')
-          this.updateIndex(this.getIndex() + 1)
-          this.timeupdate()
-        }).catch(() => {
+        if(wordType === 'lrc') {
+          const yrc = lrc[index].yrc
+          this.animationProcess.disposeLrcAnimationProcess(
+            curLineEl,
+            yrc,
+            sequence,
+          ).then(() => {
+            this.updateIndex(this.getIndex() + 1)
+            this.timeupdate()
+          }).catch(() => {
 
-        })
+          })
+        } else if(wordType === 'yrc') {
+
+        }
+
 
 
       }
@@ -249,29 +248,6 @@ class Player {
       }
     }) as LyricsLine
   }
-  protected handleAudioError = () => {
-    const error = this.audio.error;
-    if (error) {
-      switch (error.code) {
-        case error.MEDIA_ERR_NETWORK:
-          this.lrc._rednerErrorLrc('网络错误，无法下载音频。')
-          Logger.error('网络错误，无法下载音频。');
-          break;
-        case error.MEDIA_ERR_DECODE:
-          this.lrc._rednerErrorLrc('音频解码失败。')
-          Logger.error('音频解码失败。');
-          break;
-        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-          this.lrc._rednerErrorLrc('音频格式不支持。')
-          Logger.error('音频格式不支持。');
-          break;
-        default:
-          this.lrc._rednerErrorLrc('音频加载出错。')
-          Logger.error('音频加载出错。');
-          break;
-      }
-    }
-  };
 }
 
 export default Player

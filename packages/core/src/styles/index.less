@@ -10,12 +10,16 @@
     padding-bottom: 300px;
     padding-top: 200px;
 
+    .y-yrc-item.y-current-line > .y-text {
+      background-size: 100%;
+    }
     .y-player-item {
       display: flex;
       padding: @player_padding;
-      white-space: pre;
+      white-space: pre-wrap;
       flex-wrap: wrap;
       position: relative;
+      margin-bottom: 7px;
       &:hover {
         background-color: rgba(255,255,255, 0.05);
         border-radius: 10px;

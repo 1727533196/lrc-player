@@ -19,4 +19,11 @@ export type LyricsLine = {
   wait?: boolean
 }
 
+// 逐行歌词
+export type YrcLine = {
+  index: number
+  text: string
+  time: number
+}
+
 export type LrcAnimationRuleKey = 'lrc' | 'floatStart' | 'floatEnd' | 'glow' | 'waitStart1' | 'waitStart2' | 'waitAnimate' | 'waitEnd1' | 'waitEnd2'

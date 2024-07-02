@@ -48,59 +48,65 @@ class AnimationProcess {
     }
 
     return new Promise((resolve, reject) => {
-      const process = (index: number) => {
+      try {
+        const process = (index: number) => {
 
-        if (index >= yrcRule.length) {
-          if(!isGlow) {
+          if (index >= yrcRule.length) {
+            if(!isGlow) {
+              els.classList.remove('y-current-line')
+              this.recoveryAnimateStatus()
+            }
+            return resolve('')
+          }
+          // 当前逐字元素
+          const textEl = els.children[index]
+          const curYrcRule = yrcRule[index]
+
+          // 处理辉光歌词
+          if('glowYrc' in curYrcRule && (curYrcRule as Yrc).glowYrc) {
+            const glowYrc = (curYrcRule as Yrc).glowYrc!
+            this.disposeGlow()
+            return this.disposeLrcAnimationProcess(textEl, glowYrc, 0, true).then(() => {
+              process(++index)
+            })
+          }
+
+          const delayTime = +(this.props.getTime() - curYrcRule.cursor).toFixed(2)
+          const transition = curYrcRule.transition - delayTime > 0 ? (curYrcRule.transition - delayTime) * 1000 : curYrcRule.transition * 1000
+
+          const lrcAnimate = textEl.animate(...getLrcAnimationRule(transition, 'lrc'));
+          const floatAnimate = textEl.animate(...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'));
+
+          textEl.setAttribute('data-is-transition', 'true')
+
+          this.animations = [lrcAnimate]
+
+          this.lrcAnimations.set(textEl, {
+            lrc: lrcAnimate,
+            float: floatAnimate,
+          })
+          // 在动画完成后执行处理
+          lrcAnimate.finished.then(() => {
+
+            this.dispatchAnimation('clear')
+            process(++index)
+          }).catch((err: string) => {
+            console.log(err)
+
             els.classList.remove('y-current-line')
             this.recoveryAnimateStatus()
-          }
-          return resolve('')
-        }
-        // 当前逐字元素
-        const textEl = els.children[index]
-        const curYrcRule = yrcRule[index]
 
-        // 处理辉光歌词
-        if('glowYrc' in curYrcRule && (curYrcRule as Yrc).glowYrc) {
-          const glowYrc = (curYrcRule as Yrc).glowYrc!
-          this.disposeGlow()
-          return this.disposeLrcAnimationProcess(textEl, glowYrc, 0, true).then(() => {
-            process(++index)
+            return reject()
+          }).finally(() => {
+
           })
         }
-
-        const delayTime = +(this.props.getTime() - curYrcRule.cursor).toFixed(2)
-        const transition = curYrcRule.transition - delayTime > 0 ? (curYrcRule.transition - delayTime) * 1000 : curYrcRule.transition * 1000
-
-        const lrcAnimate = textEl.animate(...getLrcAnimationRule(transition, 'lrc'));
-        const floatAnimate = textEl.animate(...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'));
-
-        textEl.setAttribute('data-is-transition', 'true')
-
-        this.animations = [lrcAnimate]
-
-        this.lrcAnimations.set(textEl, {
-          lrc: lrcAnimate,
-          float: floatAnimate,
-        })
-        // 在动画完成后执行处理
-        lrcAnimate.finished.then(() => {
-
-          this.dispatchAnimation('clear')
-          process(++index)
-        }).catch((err: string) => {
-          console.log(err)
-
-          els.classList.remove('y-current-line')
-          this.recoveryAnimateStatus()
-
-          return reject()
-        }).finally(() => {
-
-        })
+        process(index)
+      } catch (e) {
+        reject(e)
+        console.error(e)
       }
-      process(index)
+
     })
   }
   // 处理辉光歌词
