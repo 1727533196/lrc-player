@@ -1,4 +1,4 @@
-import Lrc from './lrc'
+import WordRender from './wordRender'
 import Logger from '../logger'
 import {LyricsLine} from '../types/type'
 import EventHandler from "./eventHandler";
@@ -9,6 +9,7 @@ interface Core {
   animationFrameId: number | null
   updateTimeStatus: 'close' | 'open' // 音乐timeupdate事件是否打开
   wordType: WordType
+  timer: number
 }
 
 interface Options {
@@ -25,14 +26,15 @@ const replaceable = {
 
 class Player {
   audio: HTMLAudioElement
-  lrc: Lrc
+  wordRender: WordRender
   animationProcess: AnimationProcess
   eventHandler: EventHandler
   isPlaying: boolean = false
   _core: Core = {
     animationFrameId: null,
     ...replaceable,
-    wordType: 'lrc'
+    wordType: 'lrc',
+    timer: 0,
   }
   index: number = 0 // 当前行
   lastIndex: number = 0 // 上一次的index
@@ -45,7 +47,7 @@ class Player {
       return Logger.error('在调用mount方法时没用提供audio: ', audio)
     }
     this.audio = audio
-    this.lrc._initEl(el)
+    this.wordRender._initEl(el)
   }
   uninstall = () => {
     this.clearTimeupdate();
@@ -56,7 +58,7 @@ class Player {
     }
   }
   protected init = (options: Options) => {
-    this.lrc = new Lrc({
+    this.wordRender = new WordRender({
       getCurrentLrcLine: this.getCurrentLrcLine,
       setTime: this.syncIndex,
       click: options.click,
@@ -78,15 +80,23 @@ class Player {
       return
     }
     try {
+      const {updateTimeStatus, wordType} = this._core
       this.isPlaying = true
-      this.animationProcess.dispatchAnimation('play')
-      // 没有逐字歌词接力，并且updateTime还是为关闭状态时，
-      //   那么这个时候除了更新歌曲就没有在开启的另一种办法了，所以这里需要手动再次开启
-      const {updateTimeStatus} = this._core
-      const animations = this.animationProcess.getAnimations()
-      if(!animations.length && updateTimeStatus === 'close') {
-        this.timeupdate()
+
+      if(wordType === 'lrc') {
+        this.animationProcess.dispatchAnimation('play')
+        // 没有逐字歌词接力，并且updateTime还是为关闭状态时，
+        //   那么这个时候除了更新歌曲就没有在开启的另一种办法了，所以这里需要手动再次开启
+        const animations = this.animationProcess.getAnimations()
+        if(!animations.length && updateTimeStatus === 'close') {
+          this.timeupdate()
+        }
+      } else {
+        if(updateTimeStatus === 'close') {
+          this.timeupdate()
+        }
       }
+
     } catch (e) {
       Logger.error('调用play方法时抛出了异常：', e)
       return e
@@ -99,7 +109,12 @@ class Player {
     try {
       this.clearTimeupdate()
       this.isPlaying = false
-      this.animationProcess.dispatchAnimation('pause')
+
+      if(this._core.wordType === 'lrc') {
+        this.animationProcess.dispatchAnimation('pause')
+      } else {
+
+      }
     } catch (e) {
       Logger.error('调用pause方法时抛出了异常：', e)
     }
@@ -107,23 +122,31 @@ class Player {
   updateIndex = (index: number, force = false) => {
     this.lastIndex = this.index
     this.index = index
-    this.lrc._moveScroll(index, force)
+    this.wordRender._moveScroll(index, force)
   }
   getIndex = () => {
     return this.index
   }
   syncIndex = (index?: number) => {
     let sequence = 0
+    const wordType = this._core.wordType
     // 两种情况，附带index的通常是点击歌词，没有的一般是快进
     if (index) {
       this.updateIndex(index)
     } else {
-      // 当没有明确的index指引时，这个时候我们要找到index，并且定位到逐字
       const targetIndex = this.getCurrentLrcLine().index
       this.updateIndex(targetIndex)
-      sequence = this.getLyricsIndexByCharacter(targetIndex);
+
+      // 当没有明确的index指引时，这个时候我们要找到index，并且定位到逐字
+      if(wordType === 'lrc') {
+        sequence = this.getLyricsIndexByCharacter(targetIndex);
+      }
     }
-    this.animationProcess.dispatchAnimation('cancel')
+    if(wordType === 'lrc') {
+      this.animationProcess.dispatchAnimation('cancel')
+    } else {
+
+    }
     this.play()
     this.timeupdate(sequence)
   }
@@ -136,7 +159,7 @@ class Player {
 
     this._core.wordType = type
 
-    this.lrc._updateLrc(lrc, type)
+    this.wordRender._updateLrc(lrc, type)
     this.updateIndex(0, true)
     this.uninstall()
     this.play()
@@ -147,12 +170,12 @@ class Player {
     this._core.updateTimeStatus = 'open'
     const updateTime = () => {
       const currentTime = this.getTime()
-      const lrc = this.lrc._getLrc()
+      const lrc = this.wordRender._getLrc()
       const index = this.getIndex()
       const time = lrc[index].time
 
       if (currentTime >= time) {
-        const curLineEl = this.lrc.playerItem[index] // 当前元素
+        const curLineEl = this.wordRender.playerItem[index] // 当前元素
         const wordType = this._core.wordType
 
         if(lrc[index].wait) {
@@ -177,13 +200,22 @@ class Player {
           ).then(() => {
             this.updateIndex(this.getIndex() + 1)
             this.timeupdate()
-          }).catch(() => {
-
           })
         } else if(wordType === 'yrc') {
 
-        }
 
+          const duration = lrc[index].duration - (currentTime- time)
+
+          curLineEl.classList.add('y-current-line')
+          clearTimeout(this._core.timer)
+
+          this._core.timer = setTimeout(() => {
+            curLineEl.classList.remove('y-current-line')
+            this.updateIndex(this.getIndex() + 1)
+            this.timeupdate()
+          }, duration * 1000)
+
+        }
 
 
       }
@@ -203,11 +235,12 @@ class Player {
   }
   protected clearTimeupdate = () => {
     this._core.updateTimeStatus = 'close'
+    clearTimeout(this._core.timer)
     cancelAnimationFrame(this._core.animationFrameId!)
   }
   // 获取当前正在进行的逐字索引, 一行歌词中的某个逐字定位
   protected getLyricsIndexByCharacter(index: number) {
-    const yrc = this.lrc._getLrc()[index]?.yrc
+    const yrc = this.wordRender._getLrc()[index]?.yrc
     const currentTime = this.getTime()
 
     if(yrc) {
@@ -230,7 +263,7 @@ class Player {
   }
   // 获取当前行
   protected getCurrentLrcLine() {
-    const lrc = this.lrc._getLrc()
+    const lrc = this.wordRender._getLrc()
     const currentTime = this.getTime()
 
     return lrc.find((item, index) => {

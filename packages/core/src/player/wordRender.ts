@@ -1,7 +1,7 @@
 import {formattingTime, smoothScrollTo} from '../utils'
 import Logger from '../logger'
 import {LyricsLine, YrcLine} from '../types/type'
-import {WordType} from "./index.ts";
+import {WordType} from "./index";
 
 interface Props {
   getCurrentLrcLine: () => LyricsLine
@@ -10,7 +10,7 @@ interface Props {
 }
 
 type Target = HTMLDivElement | HTMLSpanElement
-class Lrc {
+class WordRender {
   lrcVal: LyricsLine[] | null = null
   el: Element | null = null
   props: Props
@@ -230,4 +230,4 @@ class Lrc {
   }
 }
 
-export default Lrc
+export default WordRender
