@@ -1,6 +1,10 @@
-# @lrc-player/core
+# @lrc-player/core  用于音乐播放器的歌词渲染
 
-> 这个包为原生dom绑定，使用class来进行编写，若没有使用到vue或react等框架时，建议使用他
+GitHub: [https://github.com/1727533196/lrc-player](https://github.com/1727533196/lrc-player)
+
+生态作品: [https://gitee.com/wa-da-sheng-dao_0/vue3-electron-netease-cloud](https://gitee.com/wa-da-sheng-dao_0/vue3-electron-netease-cloud)
+
+> 这个包为原生dom绑定，使用class来进行编写
 
 ## 初始化
 ```ts
@@ -23,5 +27,5 @@ player.updateAudioLrc(lrc)
 * `player.updateAudioLrc(lrc)` 更新歌词
   * `lrc` [`LyricsLine[]`](src/types/type.ts)：
 * `player.syncIndex()` 同步歌词当前行，调用它可更改当前播放行
-  * `index?: number`
+  * `index?: number` 若没有传入index，则会根据currentTime来自动同步当前行
 * `uninstall` 卸载

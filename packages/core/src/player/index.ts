@@ -4,6 +4,7 @@ import {LyricsLine} from '../types/type'
 import EventHandler from "./eventHandler";
 import '../styles/index.less'
 import AnimationProcess from "./animationProcess";
+import {addClass, removeClass} from "../utils";
 
 interface Core {
   animationFrameId: number | null
@@ -176,6 +177,7 @@ class Player {
 
       if (currentTime >= time) {
         const curLineEl = this.wordRender.playerItem[index] // 当前元素
+        const lastLineEl = this.wordRender.playerItem[this.lastIndex] // 当前元素
         const wordType = this._core.wordType
 
         if(lrc[index].wait) {
@@ -206,11 +208,12 @@ class Player {
 
           const duration = lrc[index].duration - (currentTime- time)
 
-          curLineEl.classList.add('y-current-line')
+          removeClass(lastLineEl)
+          addClass(curLineEl)
           clearTimeout(this._core.timer)
 
           this._core.timer = setTimeout(() => {
-            curLineEl.classList.remove('y-current-line')
+            removeClass(curLineEl)
             this.updateIndex(this.getIndex() + 1)
             this.timeupdate()
           }, duration * 1000)

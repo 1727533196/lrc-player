@@ -1,5 +1,5 @@
 import {LyricsFragment, Yrc} from "../types/type";
-import {getLrcAnimationRule} from "../utils";
+import {addClass, getLrcAnimationRule, removeClass} from "../utils";
 import {FLOAT_END_DURATION, FLOAT_START_DURATION} from "../enum";
 
 interface Props {
@@ -27,24 +27,12 @@ class AnimationProcess {
     isGlow = false
   ) {
     if(!isGlow) {
-      els.classList.add('y-current-line');
+      addClass(els)
     }
 
     // 如果序列不是从0开始，则表示此次是快进操作，需要将序列前置添加上完成样式
     if(index !== 0) {
-      const [keyframes, options] = getLrcAnimationRule(0, 'lrc',)
-      const [floatKeyFrames, floatOptions] = getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart')
-
-      for(let i = 0; i < index; i++) {
-        const el = els.children[i]
-        const lrc = el.animate(keyframes, options)
-        const float = el.animate(floatKeyFrames, floatOptions)
-
-        this.lrcAnimations.set(el, {
-          lrc,
-          float,
-        })
-      }
+      this.disposePre(index, els)
     }
 
     return new Promise((resolve, reject) => {
@@ -53,7 +41,7 @@ class AnimationProcess {
 
           if (index >= yrcRule.length) {
             if(!isGlow) {
-              els.classList.remove('y-current-line')
+              removeClass(els)
               this.recoveryAnimateStatus()
             }
             return resolve('')
@@ -93,7 +81,7 @@ class AnimationProcess {
           }).catch((err: string) => {
             console.log(err)
 
-            els.classList.remove('y-current-line')
+            removeClass(els)
             this.recoveryAnimateStatus()
 
             return reject()
@@ -112,6 +100,25 @@ class AnimationProcess {
   // 处理辉光歌词
   disposeGlow() {
 
+  }
+  disposePre(index: number, els: any) {
+    const [keyframes, options] = getLrcAnimationRule(0, 'lrc',)
+    const [floatKeyFrames, floatOptions] = getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart')
+
+    for(let i = 0; i < index; i++) {
+      const el = els.children[i]
+      if(el.classList.contains('y-glow-yrc')) {
+        this.disposePre(el.children.length, el)
+        continue
+      }
+      const lrc = el.animate(keyframes, options)
+      const float = el.animate(floatKeyFrames, floatOptions)
+
+      this.lrcAnimations.set(el, {
+        lrc,
+        float,
+      })
+    }
   }
   dispatchAnimation(type: 'play' | 'pause' | 'cancel' | 'clear') {
     if(!this.animations.length) {

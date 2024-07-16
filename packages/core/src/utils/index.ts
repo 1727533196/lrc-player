@@ -1,119 +1,5 @@
 // 解析逐字歌词
-import {LrcAnimationRuleKey, LyricsFragment, LyricsLine} from '../types/type'
-
-export function parseYrc(yrc: string) {
-  yrc = yrc.replace(/[\r\n]/g, '');
-  const result: LyricsLine[] = []
-  let obj: LyricsLine = {
-    time: 0,
-    duration: 0,
-    index: 0,
-    yrc: [],
-  }
-
-  let startIndex = 0
-  let endIndex = 0
-  let index = 0 // 每行歌词的index
-  let startCount = 0 // 当前扫描到的{数量
-  let endCount = 0 // 当前扫描到的}数量
-  let isEnd = true
-  for (let i = 0; i < yrc.length; i++) {
-    const target = yrc[i]
-    if (target === '{') {
-      if (isEnd) {
-        startIndex = i
-      }
-      startCount++
-      isEnd = false
-    } else if (target === '}') {
-      endCount++
-      if (startCount === endCount) {
-        endIndex = i
-        isEnd = true
-        startCount = 0
-        endCount = 0
-      }
-    } else if (target === '[' && isEnd) {
-      startIndex = i
-      obj = { time: 0, duration: 0, index: 0, yrc: [] }
-      result.push(obj)
-    } else if (target === ']' && isEnd) {
-      endIndex = i
-      const [time, duration] = yrc.slice(startIndex + 1, endIndex).split(',').map(item => +item / 1000)
-      obj.time = time
-      obj.duration = duration
-      obj.index = index++
-
-      // 如果当前和下一次的间隔时间超过10秒，则塞入一个空数据
-      if (i < yrc.length - 1) {
-        const nextStartIndex = yrc.indexOf('[', i + 1)
-        const nextEndIndex = yrc.indexOf(']', i + 1)
-        const [nextTime] = yrc.slice(nextStartIndex + 1, nextEndIndex).split(',').map(item => +item / 1000)
-        const total = +(obj.time + duration).toFixed(2)
-
-        if ((nextTime - total) > 8) {
-          // time = last.time + last.duration
-          // duration = nextTime - time
-          const waitDuration = +(nextTime - total).toFixed(2)
-          const waitTransition = (+(waitDuration / 3).toFixed(2)) - 0.5
-
-          result.push({
-            time: total,
-            duration: waitDuration,
-            index: index,
-            wait: true,
-            yrc: Array(3).fill(0).map((_, index) => {
-              return {
-                text: '',
-                transition: waitTransition,
-                cursor: total + waitTransition * index,
-                glowYrc: null,
-                wait: true,
-              }
-            })
-          })
-          index++
-        }
-      }
-
-    } else if (target === '(' && isEnd) {
-      startIndex = i
-    } else if (target === ')' && isEnd) {
-      endIndex = i
-      const [cursor, transition] = yrc.slice(startIndex + 1, endIndex).split(',').map(item => +item / 1000)
-      let text: string = ''
-
-      for (let o = i + 1; o < yrc.length; o++) {
-        if (['[', '('].includes(yrc[o])) {
-          break
-        }
-        text += yrc[o]
-      }
-      let glowYrc: LyricsFragment[] | null = null
-      if(transition > 1 && text.trim().length > 2) {
-
-        glowYrc = []
-        const len = text.length
-        const average = transition / len
-        for(let i = 0; i < len; i++) {
-          glowYrc.push({
-            text: text[i],
-            transition: average,
-            cursor: cursor + average * i,
-          })
-        }
-      }
-
-      obj.yrc.push({
-        text,
-        transition,
-        cursor,
-        glowYrc,
-      })
-    }
-  }
-  return result
-}
+import {LrcAnimationRuleKey} from '../types/type'
 
 export function getLrcAnimationRule(
   duration: number,
@@ -227,6 +113,13 @@ export function formattingTime(msec: number) {
     ? '0'+minute : minute}:${sec.toString().length <= 1 ? '0' + sec : sec}`
 
   return result
+}
+
+export function addClass(el: HTMLElement) {
+  el.classList.add('y-current-line')
+}
+export function removeClass(el: HTMLElement) {
+  el.classList.remove('y-current-line')
 }
 
 /**
