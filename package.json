@@ -2,12 +2,13 @@
   "name": "lrc-player",
   "private": true,
   "type": "module",
+  "description": "提供了歌词渲染、歌词解析",
   "scripts": {
     "dev": "node scripts/dev.js core",
     "dev:vue": "node scripts/dev.js vue",
     "dev:react": "node scripts/dev.js react"
   },
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "less": "^4.2.0",
     "prettier": "^3.2.5"
