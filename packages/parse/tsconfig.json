@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext", // 指定 ECMAScript 目标版本
+    "module": "ESNext", // 使用 ECMAScript 下一个版本的模块语法
+    "lib": ["ESNext", "DOM", "DOM.Iterable"], // 使用的库文件
+    "skipLibCheck": true, // 跳过库文件的类型检查
+
+    /* Bundler mode */
+    "moduleResolution": "node", // 采用 Node.js 解析模块的方式
+    "resolveJsonModule": true, // 允许导入 JSON 模块
+    "isolatedModules": true, // 每个文件作为一个单独的模块处理
+    "declaration": true, // 生成声明文件
+    "outDir": "./dist",
+
+    /* Linting */
+    "strict": true, // 启用所有严格类型检查选项
+    "strictPropertyInitialization": false, // 禁用严格的属性初始化检查
+    "esModuleInterop": true, // 启用对 ES 模块语法的互操作性
+  },
+  "exclude": ["node_modules", "dist"]
+}

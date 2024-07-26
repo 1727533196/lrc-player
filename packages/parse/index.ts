@@ -1,7 +1,29 @@
-export function parseYrc(yrc) {
+
+// 定义歌词片段的类型
+export interface LyricsFragment {
+  text: string
+  transition: number
+  cursor: number
+}
+
+// 定义歌词行的类型
+export interface Yrc extends LyricsFragment{
+  glowYrc: LyricsFragment[] | null
+  wait?: boolean
+}
+
+export type LyricsLine = {
+  time: number
+  duration: number
+  index: number
+  yrc: Yrc[]
+  wait?: boolean
+}
+
+export function parseLrc(yrc: string) {
   yrc = yrc.replace(/[\r\n]/g, '');
-  const result = []
-  let obj = {
+  const result: LyricsLine[] = []
+  let obj: LyricsLine = {
     time: 0,
     duration: 0,
     index: 0,
@@ -78,7 +100,7 @@ export function parseYrc(yrc) {
     } else if (target === ')' && isEnd) {
       endIndex = i
       const [cursor, transition] = yrc.slice(startIndex + 1, endIndex).split(',').map(item => +item / 1000)
-      let text = ''
+      let text: string = ''
 
       for (let o = i + 1; o < yrc.length; o++) {
         if (['[', '('].includes(yrc[o])) {
@@ -86,7 +108,7 @@ export function parseYrc(yrc) {
         }
         text += yrc[o]
       }
-      let glowYrc = null
+      let glowYrc: LyricsFragment[] | null = null
       if(transition > 1 && text.trim().length > 2) {
 
         glowYrc = []
@@ -114,9 +136,9 @@ export function parseYrc(yrc) {
 
 
 // 时间反序列化 timeFormat: '11:02.410' = 662.41/s     5 * 60 = 300 + 02.410
-function timeDeserialize(timeFormat) {
-  const timeArr = timeFormat.split(':') // [11, 02, 41]
-  let result = 0
+function timeDeserialize(timeFormat: string) {
+  const timeArr: string[] = timeFormat.split(':') // [11, 02, 41]
+  let result: number = 0
   for(let i = 0; i < timeArr.length; i++) {
     if(i === 0) {
       result += +timeArr[i] * 60
@@ -127,8 +149,8 @@ function timeDeserialize(timeFormat) {
   return result
 }
 
-export function formatLyric(lyric) {
-  const result = []
+export function parseYrc(lyric: string) {
+  const result: Array<{time: number, text: string, index: number, duration: number, unrender: boolean}> & {notSupportedScroll?: boolean} = []
   const lyricArr = lyric.split(/\n/)
   lyricArr.pop() // 删除最后一行多余的
 
@@ -144,10 +166,10 @@ export function formatLyric(lyric) {
       continue
     }
     let lyricItem = lyricArr[i].split(']')
-    const text = lyricItem.pop()
+    const text = lyricItem.pop() as string
     const index = i - overlookCount
     if(lyricItem[0] === undefined) {
-      result.push({ time: false, text: lyricArr[i], index, duration: 0 })
+      result.push({ time: 0, text: lyricArr[i], index, duration: 0, unrender: true })
       result.notSupportedScroll = true
       continue
     }
@@ -157,11 +179,11 @@ export function formatLyric(lyric) {
       isSort || (isSort = true)
       for (let i = 0; i < lyricItem.length; i++) {
         time = timeDeserialize(lyricItem[i].replace('[', ''))
-        result.push({ time, text, index, duration: 0 })
+        result.push({ time, text, index, duration: 0, unrender: true })
       }
     } else {
       time = timeDeserialize(lyricItem[0].replace('[', ''))
-      result.push({ time, text, index, duration: 0 })
+      result.push({ time, text, index, duration: 0, unrender: true })
     }
   }
   if(isSort) {
@@ -173,9 +195,7 @@ export function formatLyric(lyric) {
 
   // 计算 duration
   for (let i = 0; i < result.length - 1; i++) {
-    if (result[i].time !== false && result[i + 1].time !== false) {
-      result[i].duration = result[i + 1].time - result[i].time;
-    }
+    result[i].duration = result[i + 1].time - result[i].time;
   }
 
   return result

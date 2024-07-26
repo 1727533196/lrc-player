@@ -24,6 +24,12 @@ importers:
         specifier: ^5.2.0
         version: 5.2.9(less@4.2.0)
 
+  packages/parse:
+    devDependencies:
+      typescript:
+        specifier: ^5.2.2
+        version: 5.4.5
+
 packages:
 
   '@esbuild/aix-ppc64@0.20.2':
