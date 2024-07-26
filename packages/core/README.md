@@ -6,9 +6,28 @@ GitHub: [https://github.com/1727533196/lrc-player](https://github.com/1727533196
 
 > 这个包为原生dom绑定，使用class来进行编写
 
+## 安装
+```text
+选择一个你当前项目中使用的包管理工具
+
+npm: npm install @lrc-player/core@latest
+yarn: yarn add @lrc-player/core@latest
+pnpm: pnpm add @lrc-player/core@latest
+```
 ## 初始化
 ```ts
-const player = new Player()
+import '@lrc-player/core/dist/style.css' // 引入样式
+import Player from '@lrc-player/core'
+
+// 当点击任意歌词行时，会触发这个事件
+function click(time: number, index: number) {
+  console.log(time, index)
+  audio.value!.currentTime = time
+}
+
+const player = new Player({
+  click,
+})
 
 // 挂载元素，确保这一步是最早且只需要挂载一次
 player.mount(document.querySelector('#app') as HTMLElement, audio)
@@ -28,4 +47,9 @@ player.updateAudioLrc(lrc)
   * `lrc` [`LyricsLine[]`](src/types/type.ts)：
 * `player.syncIndex()` 同步歌词当前行，调用它可更改当前播放行
   * `index?: number` 若没有传入index，则会根据currentTime来自动同步当前行
-* `uninstall` 卸载
+* `player.uninstall()` 卸载
+
+
+### 如果有任何疑问，请联系我，我会积极的配合解答疑惑
+qq: 1727533196
+微信: 1727533196

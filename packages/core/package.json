@@ -1,13 +1,17 @@
 {
   "name": "@lrc-player/core",
   "private": false,
-  "version": "1.0.8",
+  "version": "1.1.1",
+  "description": "用于音乐播放器的歌词渲染",
   "type": "module",
-  "main": "dist/lrc-player-core.js",
-  "module": "dist/lrc-player-core.js",
+  "main": "dist/main.d.ts",
+  "module": "dist/index.js",
+  "types": "dist/player/index.d.ts",
+  "style": "dist/style.css",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc",
+    "build": "vite build && tsc --project tsconfig.json",
     "preview": "vite preview"
   },
   "files": [
@@ -26,5 +30,9 @@
   "devDependencies": {
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1727533196/lrc-player"
   }
 }

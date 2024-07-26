@@ -1,9 +1,7 @@
-import {LyricsFragment, LyricsLine} from "../core/src/types/type";
-
-export function parseYrc(yrc: string) {
+export function parseYrc(yrc) {
   yrc = yrc.replace(/[\r\n]/g, '');
-  const result: LyricsLine[] = []
-  let obj: LyricsLine = {
+  const result = []
+  let obj = {
     time: 0,
     duration: 0,
     index: 0,
@@ -80,7 +78,7 @@ export function parseYrc(yrc: string) {
     } else if (target === ')' && isEnd) {
       endIndex = i
       const [cursor, transition] = yrc.slice(startIndex + 1, endIndex).split(',').map(item => +item / 1000)
-      let text: string = ''
+      let text = ''
 
       for (let o = i + 1; o < yrc.length; o++) {
         if (['[', '('].includes(yrc[o])) {
@@ -88,7 +86,7 @@ export function parseYrc(yrc: string) {
         }
         text += yrc[o]
       }
-      let glowYrc: LyricsFragment[] | null = null
+      let glowYrc = null
       if(transition > 1 && text.trim().length > 2) {
 
         glowYrc = []
@@ -116,9 +114,9 @@ export function parseYrc(yrc: string) {
 
 
 // 时间反序列化 timeFormat: '11:02.410' = 662.41/s     5 * 60 = 300 + 02.410
-function timeDeserialize(timeFormat: string) {
-  const timeArr: string[] = timeFormat.split(':') // [11, 02, 41]
-  let result: number = 0
+function timeDeserialize(timeFormat) {
+  const timeArr = timeFormat.split(':') // [11, 02, 41]
+  let result = 0
   for(let i = 0; i < timeArr.length; i++) {
     if(i === 0) {
       result += +timeArr[i] * 60
@@ -129,8 +127,8 @@ function timeDeserialize(timeFormat: string) {
   return result
 }
 
-export function formatLyric(lyric: string) {
-  const result: Array<{time: number | boolean, text: string, index: number, duration: number}> & {notSupportedScroll?: boolean} = []
+export function formatLyric(lyric) {
+  const result = []
   const lyricArr = lyric.split(/\n/)
   lyricArr.pop() // 删除最后一行多余的
 
@@ -146,7 +144,7 @@ export function formatLyric(lyric: string) {
       continue
     }
     let lyricItem = lyricArr[i].split(']')
-    const text = lyricItem.pop() as string
+    const text = lyricItem.pop()
     const index = i - overlookCount
     if(lyricItem[0] === undefined) {
       result.push({ time: false, text: lyricArr[i], index, duration: 0 })
@@ -167,7 +165,7 @@ export function formatLyric(lyric: string) {
     }
   }
   if(isSort) {
-    result.sort((a, b) => (a.time as number - (b.time as number)))
+    result.sort((a, b) => (a.time - b.time))
     for (let i = 0; i < result.length; i++) {
       result[i].index = i
     }

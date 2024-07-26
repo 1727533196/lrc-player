@@ -6,8 +6,7 @@ export default defineConfig(() => {
       build: {
         lib: {
           entry: 'src/main.ts',
-          name: 'LrcPlayerCore',
-          fileName: 'lrc-player-core',
+          fileName: 'index',
           formats: ['es']
         },
         minify: false, // 禁用压缩
