@@ -7,7 +7,7 @@ GitHub: [https://github.com/1727533196/lrc-player](https://github.com/1727533196
 > 这个包为原生dom绑定，使用class来进行编写
 
 ## 安装
-```markdown
+```
 选择一个你当前项目中使用的包管理工具
 
 npm: npm install @lrc-player/core@latest
@@ -16,7 +16,7 @@ pnpm: pnpm add @lrc-player/core@latest
 
 在这里提供了一个帮助解析歌词的插件包
 npm install @lrc-player/parse@latest
-详细使用可以查看[@lrc-player/parse](https://www.npmjs.com/package/@lrc-player/parse)
+详细使用可以查看https://www.npmjs.com/package/@lrc-player/parse
 ```
 ## 初始化
 ```ts
