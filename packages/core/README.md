@@ -55,8 +55,3 @@ player.updateAudioLrc(lrc)
 * `player.syncIndex()` 同步歌词当前行，调用它可更改当前播放行
   * `index?: number` 若没有传入index，则会根据currentTime来自动同步当前行
 * `player.uninstall()` 卸载
-
-
-### 如果有任何疑问，请联系我，我会积极的配合解答疑惑
-qq: 1727533196
-微信: 1727533196
