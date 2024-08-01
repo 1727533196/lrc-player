@@ -24,23 +24,42 @@ import '@lrc-player/core/dist/style.css' // 引入样式
 import { parseLrc, parseYrc } from '@lrc-player/parse'
 import Player from '@lrc-player/core'
 
-// 当点击任意歌词行时，会触发这个事件
-function click(time: number, index: number) {
-  console.log(time, index)
-  audio.value!.currentTime = time
-}
-
 const player = new Player({
-  click,
+  // 当点击任意歌词行时，会触发这个事件
+  click(time: number, index: number) {
+    console.log(time, index)
+    audio.value!.currentTime = time
+    player.syncIndex(index)
+  }
 })
 
 // 挂载元素，确保这一步是最早且只需要挂载一次
+//  第二个参数不一定必须是audio，只需要确认这个对象里包含 currentTime：number 属性即可（并且是实时更新的）
 player.mount(document.querySelector('#app') as HTMLElement, audio)
 
 // 更新url与歌词，通常在切换下一首或上一首时调用这个
 // parseLrc是这个包里提供的解析歌词函数https://www.npmjs.com/package/@lrc-player/parse
 const lrc = parseLrc('[11700,1410](11700,510,0)Let (12210,390,0)me (12600,510,0)know')
-player.updateAudioLrc(lrc)
+// 需要确认是逐字歌词还是逐行歌词，在这里是逐字，所以传入类型为lrc
+player.updateAudioLrc(lrc, 'lrc')
+
+// 开始播放音乐
+audio.play()
+// 开始同步歌词
+player.play()
+
+// 弱使用的是vue或react，组件被销毁时，需要卸载Player实例
+// react:
+useEffect(() => {
+  return () => {
+    player.uninstall()
+  }
+}, [])
+
+// vue:
+onUnmounted(() => {
+  player.uninstall()
+})
 ```
    
 ## API
@@ -50,8 +69,8 @@ player.updateAudioLrc(lrc)
   * params：`无参数`
 * `player.pause()` 暂停
   * params：`无参数`
-* `player.updateAudioLrc(lrc)` 更新歌词
+* `player.updateAudioLrc(lrc, type: 'lrc' | 'yrc')` 更新歌词
   * `lrc` [`LyricsLine[]`](src/types/type.ts)：
 * `player.syncIndex()` 同步歌词当前行，调用它可更改当前播放行
-  * `index?: number` 若没有传入index，则会根据currentTime来自动同步当前行
+  * `index?: number` 若没有传入index，则会根据currentTime来自动同步当前行.(如果明确index，推荐传入以减少额外开销)
 * `player.uninstall()` 卸载

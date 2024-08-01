@@ -1,7 +1,7 @@
 {
   "name": "@lrc-player/core",
   "private": false,
-  "version": "1.1.2",
+  "version": "1.1.4",
   "description": "用于音乐播放器的歌词渲染",
   "type": "module",
   "main": "dist/main.d.ts",
