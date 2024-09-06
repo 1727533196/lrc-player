@@ -1,58 +1,60 @@
 import Player from './player/index'
 import '../dist/style.css'
 import './style.css'
-import lrc from '../yrc/sweet.txt'
+import text from '../yrc/sweet.txt'
 import audioUrl from '../yrc/sweet.flac'
+import {parseLrc} from '../../parse/index'
 
-const player = new Player()
-const audio = new Audio()
-
-player.mount(document.querySelector('#app') as HTMLElement, audio)
-
-const initEl = document.querySelector('.btn.init') as HTMLButtonElement
-const playEl = document.querySelector('.btn.play') as HTMLButtonElement
-const pauseEl = document.querySelector('.btn.pause') as HTMLButtonElement
-const currentEl = document.querySelector('.btn.current') as HTMLButtonElement
-const setTimeEl = document.querySelector('.btn.set-time') as HTMLButtonElement
-const timeInputEl = document.querySelector('.input-time') as HTMLInputElement
-
-if(setTimeEl && timeInputEl) {
-  setTimeEl.onclick = () => {
-    console.log('timeInputEl.value', timeInputEl.value)
-    audio.currentTime =
-    player.setTime({
-      time: +timeInputEl.value,
-    })
-  }
-}
-
-if(currentEl) {
-  currentEl.onclick = () => {
-    console.log(player.getCurrentLrcLine());
-    // console.log(player.lrc._getTransformLrc())
-  }
-}
-
-const url = audioUrl
-
-player.updateVolume(0.05)
-if(initEl) {
-  initEl.addEventListener('click', async () => {
-    const response = await fetch(lrc)
-    const data = await response.text()
-    player.updateAudioUrl(url, data)
-  })
-}
-
-if(playEl) {
-  playEl.addEventListener('click', async () => {
+const player = new Player({
+  click: (time, index) => {
+    audio.currentTime = time
     audio.play()
-    player.play()
-  })
+  }
+})
+// setTimeout(() => {
+//   player.stop(true)
+//   setTimeout(() => {
+//     player.stop(false)
+//   }, 7000)
+//   console.log('1111')
+// }, 4000)
+const audio = document.querySelector('audio')
+audio.volume = 0.2
+audio.src = audioUrl
+
+audio.onplay = () => {
+  player.play()
 }
-if(pauseEl) {
-  pauseEl.addEventListener('click', async () => {
-    audio.pause()
-    player.pause()
-  })
+
+audio.onpause = () => {
+  player.pause()
 }
+
+let lrc =
+fetch(text).then(response => {
+  response.text().then(data => {
+    player.updateAudioLrc(lrc = parseLrc(data), 'lrc')
+  })
+})
+
+player.mount(document.querySelector('.test') as HTMLElement, audio)
+
+// player.on('scroll', (el, top) => {
+//   el.scrollTo({
+//     behavior: 'smooth',
+//     top
+//   });
+// })
+
+audio.onseeked = () => {
+  player.syncIndex()
+}
+
+setTimeout(() => {
+  player.on('scroll', (el, top) => {
+    el.scrollTo({
+      behavior: 'smooth',
+      top
+    });
+  })
+}, 4000)

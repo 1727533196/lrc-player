@@ -1,12 +1,12 @@
 import {formattingTime, smoothScrollTo} from '../utils'
 import Logger from '../logger'
 import {LyricsLine, YrcLine} from '../types/type'
-import {WordType} from "./index";
+import {OnMapKey, WordType} from "./index";
 
 interface Props {
   getCurrentLrcLine: () => LyricsLine
-  setTime: (index?: number) => void
   click: (time: number, index: number) => void
+  event: {[key in OnMapKey]?: () => void}
 }
 
 type Target = HTMLDivElement | HTMLSpanElement
@@ -66,9 +66,9 @@ class WordRender {
     playerScroll!.innerHTML = lrc.map((line) => {
       if(!line.wait) {
         if(this.wordType === 'lrc') {
-          return this._generateLyricsLineHtml(line)
+          return this._generateLyricsLineHtml(line as  LyricsLine)
         } else if(this.wordType === 'yrc') {
-          return this._generateYrcLineHtml(line)
+          return this._generateYrcLineHtml(line as  YrcLine)
         }
       } else {
         return this._generateWaitHtml(line)
@@ -107,7 +107,7 @@ class WordRender {
 
     return lyricsLineHtml
   }
-  _generateWaitHtml(line: LyricsLine) {
+  _generateWaitHtml(line: LyricsLine |  YrcLine) {
     const waitHtml = `
       <div style="height: 0;padding: 0 60px; opacity: 0" data-index=${line.index} class="y-wait-item">
         <div class="y-wait"></div>
@@ -129,7 +129,12 @@ class WordRender {
       const lineTop = curLine.offsetTop
       const top = (lineTop - (scrollHalfHeight - lineHalfHeight) + 100)
 
-      smoothScrollTo(this.playerContainer, top, 400, 'power1.out')
+      const scroll = this.props.event.scroll
+      if(scroll) {
+        scroll(this.playerContainer, top)
+      } else {
+        smoothScrollTo(this.playerContainer, top, 400, 'power1.out')
+      }
       // this.playerContainer.scrollTo({
       //   behavior: 'smooth',
       //   top

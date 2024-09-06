@@ -15,7 +15,6 @@ interface Core {
 
 interface Options {
   click: (time: number, index: number) => void
-
 }
 
 export type WordType = 'yrc' | 'lrc'
@@ -24,6 +23,8 @@ export type WordType = 'yrc' | 'lrc'
 const replaceable = {
   updateTimeStatus: 'close' as 'close' | 'open'  // 明确类型
 }
+
+export type OnMapKey = 'scroll' | 'test'
 
 class Player {
   audio: HTMLAudioElement
@@ -37,8 +38,12 @@ class Player {
     wordType: 'lrc',
     timer: 0,
   }
+  isStop = false
   index: number = 0 // 当前行
   lastIndex: number = 0 // 上一次的index
+  event: {
+    [key in OnMapKey]?: () => void
+  } = {}
 
   constructor(options: Options) {
     this.init(options)
@@ -61,19 +66,26 @@ class Player {
   protected init = (options: Options) => {
     this.wordRender = new WordRender({
       getCurrentLrcLine: this.getCurrentLrcLine,
-      setTime: this.syncIndex,
       click: options.click,
+      event: this.event
     })
 
     this.eventHandler = new EventHandler({
-      setTime: this.syncIndex,
-      clearTimeupdate: this.clearTimeupdate,
+      stop: this.stop,
       getPlayStatus: this.getPlayStatus,
     })
 
     this.animationProcess = new AnimationProcess({
       getTime: this.getTime,
     })
+  }
+  stop = (status: boolean) => {
+    if(status) {
+      this.clearTimeupdate()
+      this.animationProcess.clearAllAnimate()
+    } else {
+      this.syncIndex()
+    }
   }
   getPlayStatus = () => this.isPlaying
   play = () => {
@@ -102,6 +114,12 @@ class Player {
       Logger.error('调用play方法时抛出了异常：', e)
       return e
     }
+  }
+  on(onMapKey: OnMapKey, handle: () => void) {
+    if(this.event[onMapKey]) {
+      Logger.warning(`检查到${onMapKey}事件已被绑定，将会覆盖掉上次已绑定的相同事件`)
+    }
+    this.event[onMapKey] = handle
   }
   pause = () => {
     if (!this.isPlaying) {
@@ -155,7 +173,7 @@ class Player {
     return +this.audio.currentTime.toFixed(2)
   }
   /* 更新url, 更新歌词，从而使其重新渲染  yrc 表示逐行，lrc表示逐字 */
-  updateAudioLrc = async (lrc: LyricsLine[], type: 'yrc' | 'lrc') => {
+  updateAudioLrc = (lrc: LyricsLine[], type: 'yrc' | 'lrc') => {
     this.pause()
 
     this._core.wordType = type
@@ -174,7 +192,6 @@ class Player {
       const lrc = this.wordRender._getLrc()
       const index = this.getIndex()
       const time = lrc[index].time
-
       if (currentTime >= time) {
         const curLineEl = this.wordRender.playerItem[index] // 当前元素
         const lastLineEl = this.wordRender.playerItem[this.lastIndex] // 当前元素

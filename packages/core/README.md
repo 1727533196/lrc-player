@@ -29,6 +29,9 @@ const player = new Player({
   click(time: number, index: number) {
     console.log(time, index)
     audio.value!.currentTime = time
+    
+    // 在歌词类内部不会主动追踪currentTime的改变行动
+    //  所以任何主动更改currentTime的操作，都需要手动调用syncIndex来同步行
     player.syncIndex(index)
   }
 })
@@ -48,7 +51,7 @@ audio.play()
 // 开始同步歌词
 player.play()
 
-// 弱使用的是vue或react，组件被销毁时，需要卸载Player实例
+// 若使用的是vue或react，组件被销毁时，需要卸载Player实例
 // react:
 useEffect(() => {
   return () => {

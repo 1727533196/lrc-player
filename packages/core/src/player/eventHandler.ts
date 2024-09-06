@@ -1,7 +1,6 @@
 interface Props {
-  setTime: (index?: number) => void
-  clearTimeupdate: () => void
   getPlayStatus: () => boolean
+  stop: (status: boolean) => void
 }
 
 class EventHandler {
@@ -14,10 +13,10 @@ class EventHandler {
     document.addEventListener('visibilitychange', () => {
       const state = document.visibilityState
       if(state === 'hidden') {
-        this.props.clearTimeupdate()
+        this.props.stop(true)
       } else {
         if(this.props.getPlayStatus()) {
-          this.props.setTime()
+          this.props.stop(false)
         }
       }
     })

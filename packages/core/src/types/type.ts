@@ -24,6 +24,7 @@ export type YrcLine = {
   index: number
   text: string
   time: number
+  wait?: boolean
 }
 
 export type LrcAnimationRuleKey = 'lrc' | 'floatStart' | 'floatEnd' | 'glow' | 'waitStart1' | 'waitStart2' | 'waitAnimate' | 'waitEnd1' | 'waitEnd2'
