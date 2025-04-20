@@ -51,7 +51,7 @@ audio.play()
 // 开始同步歌词
 player.play()
 
-// 若使用的是vue或react，组件被销毁时，需要卸载Player实例
+// 组件被销毁时，卸载Player实例
 // react:
 useEffect(() => {
   return () => {

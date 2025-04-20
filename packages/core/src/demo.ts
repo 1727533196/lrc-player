@@ -3,13 +3,15 @@ import '../dist/style.css'
 import './style.css'
 import text from '../yrc/sweet.txt'
 import audioUrl from '../yrc/sweet.flac'
-import {parseLrc} from '../../parse/index'
+import { parseLrc } from '../../parse/index'
+import { getLrcAnimationRule } from './utils'
+import { FLOAT_START_DURATION } from './enum'
 
 const player = new Player({
   click: (time, index) => {
     audio.currentTime = time
     audio.play()
-  }
+  },
 })
 // setTimeout(() => {
 //   player.stop(true)
@@ -30,10 +32,9 @@ audio.onpause = () => {
   player.pause()
 }
 
-let lrc =
-fetch(text).then(response => {
-  response.text().then(data => {
-    player.updateAudioLrc(lrc = parseLrc(data), 'lrc')
+let lrc = fetch(text).then((response) => {
+  response.text().then((data) => {
+    player.updateAudioLrc((lrc = parseLrc(data)), 'lrc')
   })
 })
 
@@ -54,7 +55,7 @@ setTimeout(() => {
   player.on('scroll', (el, top) => {
     el.scrollTo({
       behavior: 'smooth',
-      top
-    });
+      top,
+    })
   })
 }, 4000)

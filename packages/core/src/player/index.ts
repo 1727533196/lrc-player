@@ -27,7 +27,7 @@ const replaceable = {
 export type OnMapKey = 'scroll' | 'test'
 
 class Player {
-  audio: HTMLAudioElement
+  audio: { currentTime: number }
   wordRender: WordRender
   animationProcess: AnimationProcess
   eventHandler: EventHandler
@@ -48,9 +48,9 @@ class Player {
   constructor(options: Options) {
     this.init(options)
   }
-  mount(el: Element, audio: any) {
-    if(!audio) {
-      return Logger.error('在调用mount方法时没用提供audio: ', audio)
+  mount(el: Element, audio: typeof this.audio) {
+    if(!audio || audio.currentTime === undefined) {
+      return Logger.error('在调用mount方法时没有提供currentTime: ', JSON.stringify(audio))
     }
     this.audio = audio
     this.wordRender._initEl(el)
@@ -80,9 +80,13 @@ class Player {
     })
   }
   stop = (status: boolean) => {
+    if(!this.getPlayStatus()) {
+      return
+    }
     if(status) {
       this.clearTimeupdate()
       this.animationProcess.clearAllAnimate()
+      // this.animationProcess.dispatchAnimation('pause')
     } else {
       this.syncIndex()
     }

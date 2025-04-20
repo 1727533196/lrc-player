@@ -1,6 +1,6 @@
-import {LyricsFragment, Yrc} from "../types/type";
-import {addClass, getLrcAnimationRule, removeClass} from "../utils";
-import {FLOAT_END_DURATION, FLOAT_START_DURATION} from "../enum";
+import { LyricsFragment, Yrc } from '../types/type'
+import { addClass, getLrcAnimationRule, removeClass } from '../utils'
+import { FLOAT_END_DURATION, FLOAT_START_DURATION } from '../enum'
 
 interface Props {
   getTime: () => number
@@ -24,23 +24,22 @@ class AnimationProcess {
     els: any,
     yrcRule: Yrc[] | LyricsFragment[],
     index: number,
-    isGlow = false
+    isGlow = false,
   ) {
-    if(!isGlow) {
+    if (!isGlow) {
       addClass(els)
     }
 
     // 如果序列不是从0开始，则表示此次是快进操作，需要将序列前置添加上完成样式
-    if(index !== 0) {
+    if (index !== 0) {
       this.disposePre(index, els)
     }
 
     return new Promise((resolve, reject) => {
       try {
         const process = (index: number) => {
-
           if (index >= yrcRule.length) {
-            if(!isGlow) {
+            if (!isGlow) {
               removeClass(els)
               this.recoveryAnimateStatus()
             }
@@ -51,19 +50,34 @@ class AnimationProcess {
           const curYrcRule = yrcRule[index]
 
           // 处理辉光歌词
-          if('glowYrc' in curYrcRule && (curYrcRule as Yrc).glowYrc) {
+          if ('glowYrc' in curYrcRule && (curYrcRule as Yrc).glowYrc) {
             const glowYrc = (curYrcRule as Yrc).glowYrc!
             this.disposeGlow()
-            return this.disposeLrcAnimationProcess(textEl, glowYrc, 0, true).then(() => {
+            return this.disposeLrcAnimationProcess(
+              textEl,
+              glowYrc,
+              0,
+              true,
+            ).then(() => {
               process(++index)
             })
           }
 
-          const delayTime = +(this.props.getTime() - curYrcRule.cursor).toFixed(2)
-          const transition = curYrcRule.transition - delayTime > 0 ? (curYrcRule.transition - delayTime) * 1000 : curYrcRule.transition * 1000
+          const transition = curYrcRule.transition
+          const delayTime = +(this.props.getTime() - curYrcRule.cursor).toFixed(
+            2,
+          )
+          const timeRemaining =
+            transition - delayTime > 0
+              ? (transition - delayTime) * 1000
+              : transition * 1000
 
-          const lrcAnimate = textEl.animate(...getLrcAnimationRule(transition, 'lrc'));
-          const floatAnimate = textEl.animate(...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'));
+          const lrcAnimate = textEl.animate(
+            ...getLrcAnimationRule(timeRemaining, 'lrc'),
+          )
+          const floatAnimate = textEl.animate(
+            ...getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart'),
+          )
 
           textEl.setAttribute('data-is-transition', 'true')
 
@@ -74,40 +88,40 @@ class AnimationProcess {
             float: floatAnimate,
           })
           // 在动画完成后执行处理
-          lrcAnimate.finished.then(() => {
+          lrcAnimate.finished
+            .then(() => {
+              this.dispatchAnimation('clear')
+              process(++index)
+            })
+            .catch((err: string) => {
+              console.log(err)
 
-            this.dispatchAnimation('clear')
-            process(++index)
-          }).catch((err: string) => {
-            console.log(err)
+              removeClass(els)
+              this.recoveryAnimateStatus()
 
-            removeClass(els)
-            this.recoveryAnimateStatus()
-
-            return reject()
-          }).finally(() => {
-
-          })
+              return reject()
+            })
+            .finally(() => {})
         }
         process(index)
       } catch (e) {
         reject(e)
         console.error(e)
       }
-
     })
   }
   // 处理辉光歌词
-  disposeGlow() {
-
-  }
+  disposeGlow() {}
   disposePre(index: number, els: any) {
-    const [keyframes, options] = getLrcAnimationRule(0, 'lrc',)
-    const [floatKeyFrames, floatOptions] = getLrcAnimationRule(FLOAT_START_DURATION, 'floatStart')
+    const [keyframes, options] = getLrcAnimationRule(0, 'lrc')
+    const [floatKeyFrames, floatOptions] = getLrcAnimationRule(
+      FLOAT_START_DURATION,
+      'floatStart',
+    )
 
-    for(let i = 0; i < index; i++) {
+    for (let i = 0; i < index; i++) {
       const el = els.children[i]
-      if(el.classList.contains('y-glow-yrc')) {
+      if (el.classList.contains('y-glow-yrc')) {
         this.disposePre(el.children.length, el)
         continue
       }
@@ -121,23 +135,23 @@ class AnimationProcess {
     }
   }
   dispatchAnimation(type: 'play' | 'pause' | 'cancel' | 'clear') {
-    if(!this.animations.length) {
+    if (!this.animations.length) {
       return
     }
-    if(type === 'play') {
-      this.animations.forEach(animate => {
+    if (type === 'play') {
+      this.animations.forEach((animate) => {
         animate.play()
       })
-    } else if(type === 'pause') {
-      this.animations.forEach(animate => {
+    } else if (type === 'pause') {
+      this.animations.forEach((animate) => {
         animate.pause()
       })
-    } else if(type === 'cancel') {
-      this.animations.forEach(animate => {
+    } else if (type === 'cancel') {
+      this.animations.forEach((animate) => {
         animate.cancel()
       })
       this.animations = []
-    } else if(type === 'clear') {
+    } else if (type === 'clear') {
       this.animations = []
     }
   }
@@ -160,14 +174,16 @@ class AnimationProcess {
   }
   // 动画结束后恢复状态
   protected recoveryAnimateStatus() {
-
     const lrcAnimations = this.lrcAnimations
 
-    if(lrcAnimations.size === 0) {
+    if (lrcAnimations.size === 0) {
       return
     }
 
-    const [floatKeyFrames, floatOptions] = getLrcAnimationRule(FLOAT_END_DURATION, 'floatEnd')
+    const [floatKeyFrames, floatOptions] = getLrcAnimationRule(
+      FLOAT_END_DURATION,
+      'floatEnd',
+    )
 
     lrcAnimations.forEach((value, el) => {
       const { lrc, float } = value
